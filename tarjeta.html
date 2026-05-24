@@ -10,6 +10,7 @@
   <title>Mi Tarjeta — Farmacia Wallet</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -299,6 +300,47 @@
       border-radius: 99px;
     }
 
+    /* QR del cliente */
+    .qr-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      text-align: center;
+      display: none;
+    }
+    .qr-section.visible { display: block; }
+    .qr-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .qr-section p { font-size: 12px; color: var(--text-sub); margin-bottom: 16px; }
+    .qr-box-client {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px;
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+    .btn-toggle-qr {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(0,196,167,0.3);
+      border-radius: 14px;
+      color: var(--accent);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 15px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-toggle-qr:active { opacity: 0.8; }
+
     /* Share button */
     .btn-share {
       width: 100%;
@@ -447,6 +489,19 @@
         </div>
         <span class="level-current-tag" id="currentOro" style="display:none;">✓ Actual</span>
       </div>
+    </div>
+
+    <!-- QR para farmacéutico -->
+    <button class="btn-toggle-qr" id="btnToggleQR" onclick="toggleQR()">
+      📷 Mostrar QR para el farmacéutico
+    </button>
+    <div class="qr-section" id="qrSection">
+      <h3>📷 Escanea este QR</h3>
+      <p>Muéstrale esta pantalla al farmacéutico para que escanee tu sello</p>
+      <div class="qr-box-client">
+        <div id="clientQRCode"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-sub);">Tu tarjeta personal — no la compartas</div>
     </div>
 
     <!-- Share button -->
@@ -668,6 +723,30 @@
         </div>`;
       card.appendChild(row);
     });
+  }
+
+  // ── QR del cliente ───────────────────────────────
+  let qrGenerado = false;
+  function toggleQR() {
+    const section = document.getElementById('qrSection');
+    const btn     = document.getElementById('btnToggleQR');
+    const visible = section.classList.toggle('visible');
+    btn.textContent = visible
+      ? '✕ Ocultar QR'
+      : '📷 Mostrar QR para el farmacéutico';
+
+    if (visible && !qrGenerado) {
+      const url = window.location.href;
+      new QRCode(document.getElementById('clientQRCode'), {
+        text:         url,
+        width:        200,
+        height:       200,
+        colorDark:    '#000000',
+        colorLight:   '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+      qrGenerado = true;
+    }
   }
 
   // ── Compartir tarjeta ─────────────────────────────
