@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#060d12" />
+  <title>Registro — Farmacia Wallet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:         #060d12;
+      --card:       #0d1a22;
+      --elevated:   #152230;
+      --border:     rgba(255,255,255,0.08);
+      --text:       #ffffff;
+      --text-sub:   #8faab8;
+      --muted:      #3a5568;
+      --accent:     #00C4A7;
+      --accent-dim: rgba(0,196,167,0.15);
+      --error:      #ef4444;
+      --success:    #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 40px;
+    }
+    .wrapper {
+      width: 100%;
+      max-width: 420px;
+    }
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-top: 16px;
+    }
+    .header .logo-emoji {
+      font-size: 52px;
+      display: block;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 0 20px rgba(0,196,167,0.4));
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .header p {
+      font-size: 14px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    /* Benefits strip */
+    .benefits {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .benefit-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(0,196,167,0.2);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+    .benefit-item .b-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .benefit-item .b-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .benefit-item .b-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 1px;
+    }
+
+    /* Form card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+    }
+    .card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .field {
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      padding: 13px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    .field input:focus {
+      border-color: var(--accent);
+    }
+    .field input::placeholder {
+      color: var(--muted);
+    }
+    .field .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+
+    /* Button */
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #060d12;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 16px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Status messages */
+    .msg {
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 16px;
+      display: none;
+    }
+    .msg.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+    .msg.success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+    .msg.show { display: block; }
+
+    /* Spinner */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(6,13,18,0.3);
+      border-top-color: #060d12;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <!-- Header -->
+  <div class="header">
+    <span class="logo-emoji">⚕️</span>
+    <h1 id="nombreNegocio">Farmacia Wallet</h1>
+    <p>Programa de fidelización</p>
+  </div>
+
+  <!-- Beneficios -->
+  <div class="benefits">
+    <div class="benefit-item">
+      <span class="b-icon">💊</span>
+      <div>
+        <div class="b-text">Sello por cada compra</div>
+        <div class="b-sub">Acumula en cada visita a la farmacia</div>
+      </div>
+    </div>
+    <div class="benefit-item">
+      <span class="b-icon">🎁</span>
+      <div>
+        <div class="b-text">Recompensa cada 10 sellos</div>
+        <div class="b-sub">Descuentos y productos gratis exclusivos</div>
+      </div>
+    </div>
+    <div class="benefit-item">
+      <span class="b-icon">⚕️</span>
+      <div>
+        <div class="b-text">Niveles Bronce, Plata y Oro</div>
+        <div class="b-sub">Más beneficios mientras más acumulas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario -->
+  <div class="card">
+    <h2>Únete al programa</h2>
+    <div class="field">
+      <label for="nombre">Nombre completo *</label>
+      <input type="text" id="nombre" placeholder="Tu nombre" autocomplete="name" />
+    </div>
+    <div class="field">
+      <label for="telefono">Teléfono *</label>
+      <input type="tel" id="telefono" placeholder="+56 9 1234 5678" autocomplete="tel" inputmode="tel" />
+      <div class="hint">Si ya eres cliente, te encontraremos por tu número</div>
+    </div>
+    <div class="field">
+      <label for="email">Email <span style="color:var(--muted)">(opcional)</span></label>
+      <input type="email" id="email" placeholder="tu@email.com" autocomplete="email" inputmode="email" />
+    </div>
+    <button class="btn-primary" id="btnRegistrar" onclick="registrar()">
+      Unirme al programa ⚕️
+    </button>
+    <div class="msg error" id="msgError"></div>
+    <div class="msg success" id="msgSuccess"></div>
+  </div>
+
+  <div class="footer">Tu información está protegida y nunca es compartida</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const CONFIG = {
+    SUPABASE_URL:      'https://tsevjwdkvcqivektwyuo.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzZXZqd2RrdmNxaXZla3R3eXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1OTQ2NTIsImV4cCI6MjA5NTE3MDY1Mn0.M2bGm_Kffpl5yC5h709WhT5LrA_Fg2A1AZ2gjeL2k6k',
+    BUSINESS_ID:       'farmacia-001',
+    ADMIN_PASSWORD:    'admin123',
+    SELLOS_POR_REWARD: 10,
+    NOMBRE_NEGOCIO:    'Farmacias Aragón',
+    EMOJI_SELLO:       '💊',
+    EMOJI_MARCA:       '⚕️',
+  };
+
+  // Inicializar nombre
+  document.getElementById('nombreNegocio').textContent = CONFIG.NOMBRE_NEGOCIO + ' — Wallet';
+  document.title = CONFIG.NOMBRE_NEGOCIO + ' — Registro';
+
+  const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+  function showError(msg) {
+    const el = document.getElementById('msgError');
+    el.textContent = msg;
+    el.classList.add('show');
+    document.getElementById('msgSuccess').classList.remove('show');
+  }
+  function showSuccess(msg) {
+    const el = document.getElementById('msgSuccess');
+    el.textContent = msg;
+    el.classList.add('show');
+    document.getElementById('msgError').classList.remove('show');
+  }
+  function clearMsgs() {
+    document.getElementById('msgError').classList.remove('show');
+    document.getElementById('msgSuccess').classList.remove('show');
+  }
+
+  function normalizePhone(p) {
+    return p.replace(/\s+/g, '').trim();
+  }
+
+  async function registrar() {
+    const nombre   = document.getElementById('nombre').value.trim();
+    const telefono = normalizePhone(document.getElementById('telefono').value);
+    const email    = document.getElementById('email').value.trim();
+    const btn      = document.getElementById('btnRegistrar');
+
+    clearMsgs();
+
+    if (!nombre) return showError('Por favor ingresa tu nombre.');
+    if (!telefono) return showError('Por favor ingresa tu teléfono.');
+    if (telefono.length < 7) return showError('El teléfono parece muy corto.');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+
+    try {
+      // Buscar cliente existente por teléfono
+      const { data: existente, error: errBuscar } = await sb
+        .from('customers')
+        .select('token, nombre')
+        .eq('telefono', telefono)
+        .eq('business_id', CONFIG.BUSINESS_ID)
+        .maybeSingle();
+
+      if (errBuscar) throw errBuscar;
+
+      if (existente) {
+        showSuccess(`¡Bienvenido de vuelta, ${existente.nombre}! Redirigiendo a tu tarjeta...`);
+        setTimeout(() => {
+          window.location.href = `tarjeta.html?token=${existente.token}`;
+        }, 1200);
+        return;
+      }
+
+      // Crear nuevo cliente
+      const { data: nuevo, error: errCrear } = await sb
+        .from('customers')
+        .insert({
+          nombre,
+          telefono,
+          email: email || null,
+          business_id: CONFIG.BUSINESS_ID,
+        })
+        .select('token')
+        .single();
+
+      if (errCrear) throw errCrear;
+
+      showSuccess(`¡Registro exitoso! Bienvenido, ${nombre}. Redirigiendo...`);
+      setTimeout(() => {
+        window.location.href = `tarjeta.html?token=${nuevo.token}`;
+      }, 1200);
+
+    } catch (err) {
+      console.error(err);
+      showError('Ocurrió un error. Por favor intenta de nuevo.');
+      btn.disabled = false;
+      btn.innerHTML = 'Unirme al programa ⚕️';
+    }
+  }
+
+  // Enter para enviar
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') registrar();
+  });
+</script>
+</body>
+</html>

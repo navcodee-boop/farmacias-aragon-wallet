@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#060d12" />
+  <title>Admin — Farmacia Wallet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:         #060d12;
+      --card:       #0d1a22;
+      --elevated:   #152230;
+      --border:     rgba(255,255,255,0.08);
+      --text:       #ffffff;
+      --text-sub:   #8faab8;
+      --muted:      #3a5568;
+      --accent:     #00C4A7;
+      --accent-dim: rgba(0,196,167,0.15);
+      --error:      #ef4444;
+      --success:    #22c55e;
+      --bronce-from: #7C5C3C; --bronce-to: #C49A6C;
+      --plata-from:  #607D8B; --plata-to:  #B0C4CE;
+      --oro-from:    #B45309; --oro-to:    #F59E0B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── Header ─────────────────────────────── */
+    .topbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar .logo { font-size: 22px; }
+    .topbar h1 { font-size: 17px; font-weight: 700; flex: 1; }
+    .topbar .admin-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,196,167,0.3);
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+    .logout-btn {
+      background: var(--elevated);
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+
+    /* ─── Layout ─────────────────────────────── */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar tabs */
+    .sidebar {
+      width: 200px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      padding: 20px 0;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    @media (max-width: 700px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; flex-direction: row; padding: 0; border-right: none; border-bottom: 1px solid var(--border); overflow-x: auto; }
+      .sidebar .nav-item { border-radius: 0; padding: 14px 16px; white-space: nowrap; }
+      .main-content { overflow-y: auto; }
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-sub);
+      cursor: pointer;
+      border-radius: 8px;
+      margin: 0 8px;
+      transition: background 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-item:hover { background: var(--elevated); color: var(--text); }
+    .nav-item.active { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+    .nav-item .nav-icon { font-size: 16px; }
+
+    /* Main */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 24px;
+      max-width: 1200px;
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ─── Gate ───────────────────────────────── */
+    #gateScreen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .gate-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 28px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+    .gate-card .icon { font-size: 44px; margin-bottom: 12px; }
+    .gate-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .gate-card p { font-size: 14px; color: var(--text-sub); margin-bottom: 24px; }
+    #adminScreen { display: none; flex: 1; flex-direction: column; }
+
+    /* ─── Section titles ─────────────────────── */
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      letter-spacing: -0.3px;
+    }
+    .section-sub {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-top: -14px;
+      margin-bottom: 20px;
+    }
+
+    /* ─── KPI Cards ──────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+    .kpi-value { font-size: 36px; font-weight: 800; color: var(--accent); line-height: 1; }
+    .kpi-desc  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ─── Charts ─────────────────────────────── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 800px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .chart-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+    .chart-wrap { position: relative; height: 200px; }
+
+    /* ─── Table ──────────────────────────────── */
+    .table-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .table-controls input {
+      flex: 1;
+      min-width: 180px;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+    }
+    .table-controls input:focus { border-color: var(--accent); }
+    .table-controls input::placeholder { color: var(--muted); }
+
+    .filter-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-btn {
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+    .customers-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .customers-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .customers-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+    .customers-table tr:last-child td { border-bottom: none; }
+    .customers-table tr:hover td { background: var(--elevated); }
+
+    .nivel-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+    .nivel-Bronce { background: linear-gradient(135deg, var(--bronce-from), var(--bronce-to)); color: #fff; }
+    .nivel-Plata  { background: linear-gradient(135deg, var(--plata-from),  var(--plata-to));  color: #fff; }
+    .nivel-Oro    { background: linear-gradient(135deg, var(--oro-from),    var(--oro-to));    color: #fff; }
+
+    .action-btns { display: flex; gap: 6px; flex-wrap: nowrap; }
+    .btn-xs {
+      background: var(--elevated);
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .btn-xs:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+    .btn-xs.danger:hover { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+
+    .table-wrapper {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    /* ─── Buttons ────────────────────────────── */
+    .btn-primary {
+      background: var(--accent);
+      color: #060d12;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-secondary-sm {
+      background: var(--elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+
+    /* ─── Modal ──────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6,13,18,0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 20px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      width: 100%;
+      max-width: 440px;
+    }
+    .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field input {
+      width: 100%;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      padding: 11px 14px;
+      outline: none;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .field input::placeholder { color: var(--muted); }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .modal-actions .btn-primary { flex: 1; }
+
+    /* Link share */
+    .link-share {
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--text-sub);
+      word-break: break-all;
+      margin-top: 12px;
+      display: none;
+    }
+    .link-share strong { color: var(--accent); display: block; margin-bottom: 4px; }
+
+    /* ─── Form inputs general ────────────────── */
+    input[type="password"], input[type="text"], input[type="email"], input[type="tel"], input[type="number"] {
+      width: 100%;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      padding: 13px 16px;
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--accent) !important; }
+    input::placeholder { color: var(--muted); }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(6,13,18,0.3);
+      border-top-color: #060d12;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 500; margin-top: 12px; display: none; }
+    .msg.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+    .msg.success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+    .msg.show { display: block; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-sub);
+    }
+    .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+
+    /* Add customer section */
+    .add-form {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+    }
+    .add-form h3 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+
+    /* Reward tag in table */
+    .reward-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(251,191,36,0.2);
+      color: #FCD34D;
+      border: 1px solid rgba(245,158,11,0.4);
+      border-radius: 99px;
+      padding: 2px 7px;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Gate ─────────────────────────────────────── -->
+<div id="gateScreen">
+  <div class="gate-card">
+    <div class="icon">🔒</div>
+    <h2>Panel Administrativo</h2>
+    <p>Ingresa la contraseña de administrador para continuar</p>
+    <input type="password" id="adminPass" placeholder="Contraseña" style="margin-bottom:0;" />
+    <button class="btn-primary" style="width:100%;margin-top:12px;" onclick="checkAdminPass()">
+      Ingresar al panel
+    </button>
+    <div class="msg error" id="gateError"></div>
+  </div>
+</div>
+
+<!-- ─── Admin screen ──────────────────────────────── -->
+<div id="adminScreen">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <span class="logo">⚕️</span>
+    <h1 id="adminTitle">Farmacia — Admin</h1>
+    <span class="admin-badge">ADMIN</span>
+    <button class="logout-btn" onclick="logout()">Salir</button>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" data-tab="clientes" onclick="switchTab('clientes')">
+        <span class="nav-icon">👥</span> Clientes
+      </div>
+      <div class="nav-item" data-tab="agregar" onclick="switchTab('agregar')">
+        <span class="nav-icon">➕</span> Nuevo cliente
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+
+      <!-- ── Dashboard tab ── -->
+      <div class="tab-pane active" id="tab-dashboard">
+        <div class="section-title">Dashboard</div>
+        <div class="section-sub" id="dashDate">Cargando...</div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Sellos hoy</div>
+            <div class="kpi-value" id="kpiHoy">—</div>
+            <div class="kpi-desc">💊 agregados hoy</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Sellos este mes</div>
+            <div class="kpi-value" id="kpiMes">—</div>
+            <div class="kpi-desc">💊 en el mes actual</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total clientes</div>
+            <div class="kpi-value" id="kpiClientes">—</div>
+            <div class="kpi-desc">clientes registrados</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Con recompensa</div>
+            <div class="kpi-value" id="kpiReward">—</div>
+            <div class="kpi-desc">🎁 recompensa disponible</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>💊 Sellos por día (últimos 14 días)</h3>
+            <div class="chart-wrap">
+              <canvas id="chartBars"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>Distribución por nivel</h3>
+            <div class="chart-wrap">
+              <canvas id="chartDonut"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Clientes tab ── -->
+      <div class="tab-pane" id="tab-clientes">
+        <div class="section-title">Clientes</div>
+
+        <div class="table-controls">
+          <input type="text" id="searchInput" placeholder="🔍  Buscar por nombre o teléfono..." oninput="filterTable()" />
+          <div class="filter-btns">
+            <button class="filter-btn active" data-nivel="Todos" onclick="setFilter('Todos')">Todos</button>
+            <button class="filter-btn" data-nivel="Bronce" onclick="setFilter('Bronce')">Bronce</button>
+            <button class="filter-btn" data-nivel="Plata" onclick="setFilter('Plata')">Plata</button>
+            <button class="filter-btn" data-nivel="Oro" onclick="setFilter('Oro')">Oro</button>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="customers-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Nivel</th>
+                <th>Total sellos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="4"><div class="empty-state"><div class="icon">⏳</div><p>Cargando clientes...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Agregar tab ── -->
+      <div class="tab-pane" id="tab-agregar">
+        <div class="section-title">Agregar cliente</div>
+        <div class="add-form">
+          <h3>Nuevo cliente</h3>
+          <div class="field">
+            <label>Nombre completo *</label>
+            <input type="text" id="newNombre" placeholder="Nombre completo" style="font-size:14px;padding:11px 14px;border-radius:10px;" />
+          </div>
+          <div class="field">
+            <label>Teléfono *</label>
+            <input type="tel" id="newTelefono" placeholder="+56 9 1234 5678" style="font-size:14px;padding:11px 14px;border-radius:10px;" />
+          </div>
+          <div class="field">
+            <label>Email <span style="color:var(--muted);text-transform:none;font-weight:400;">(opcional)</span></label>
+            <input type="email" id="newEmail" placeholder="email@ejemplo.com" style="font-size:14px;padding:11px 14px;border-radius:10px;" />
+          </div>
+          <div class="field">
+            <label>Sellos iniciales</label>
+            <input type="number" id="newSellos" placeholder="0" min="0" max="999" value="0" style="font-size:14px;padding:11px 14px;border-radius:10px;" />
+          </div>
+          <button class="btn-primary" style="width:100%;" onclick="crearCliente()">
+            Crear cliente
+          </button>
+          <div class="msg error"   id="addError"></div>
+          <div class="msg success" id="addSuccess"></div>
+          <div class="link-share" id="linkShare">
+            <strong>🔗 Link de la tarjeta digital:</strong>
+            <span id="linkUrl"></span>
+            <button style="margin-top:8px;background:var(--accent);color:#060d12;border:none;border-radius:8px;font-family:Inter,sans-serif;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;" onclick="copyLink()">
+              Copiar link
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-content -->
+  </div><!-- /layout -->
+</div><!-- /adminScreen -->
+
+<!-- ─── Modal editar cliente ─────────────────────── -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>✏️ Editar cliente</h3>
+    <input type="hidden" id="editToken" />
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="editNombre" placeholder="Nombre completo" />
+    </div>
+    <div class="field">
+      <label>Teléfono</label>
+      <input type="tel" id="editTelefono" placeholder="Teléfono" />
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="editEmail" placeholder="Email" />
+    </div>
+    <div class="field">
+      <label>Sellos (total acumulado)</label>
+      <input type="number" id="editSellos" placeholder="0" min="0" max="9999" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarEdicion()">Guardar cambios</button>
+    </div>
+    <div class="msg error" id="editError"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const CONFIG = {
+    SUPABASE_URL:      'https://tsevjwdkvcqivektwyuo.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzZXZqd2RrdmNxaXZla3R3eXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1OTQ2NTIsImV4cCI6MjA5NTE3MDY1Mn0.M2bGm_Kffpl5yC5h709WhT5LrA_Fg2A1AZ2gjeL2k6k',
+    BUSINESS_ID:       'farmacia-001',
+    ADMIN_PASSWORD:    'admin123',
+    SELLOS_POR_REWARD: 10,
+    NOMBRE_NEGOCIO:    'Farmacias Aragón',
+    EMOJI_SELLO:       '💊',
+    EMOJI_MARCA:       '⚕️',
+  };
+
+  document.getElementById('adminTitle').textContent = CONFIG.NOMBRE_NEGOCIO + ' — Admin';
+  document.title = CONFIG.NOMBRE_NEGOCIO + ' — Admin';
+
+  const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+  let allCustomers = [];
+  let activeFilter = 'Todos';
+  let newClientLink = '';
+  let chartBars = null;
+  let chartDonut = null;
+
+  // ─── Auth ────────────────────────────────────────
+  function checkAdminPass() {
+    const val = document.getElementById('adminPass').value;
+    if (val === CONFIG.ADMIN_PASSWORD) {
+      document.getElementById('gateScreen').style.display = 'none';
+      document.getElementById('adminScreen').style.display = 'flex';
+      initAdmin();
+    } else {
+      const m = document.getElementById('gateError');
+      m.textContent = 'Contraseña incorrecta.';
+      m.classList.add('show');
+    }
+  }
+  document.getElementById('adminPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkAdminPass();
+  });
+
+  function logout() {
+    document.getElementById('gateScreen').style.display = 'flex';
+    document.getElementById('adminScreen').style.display = 'none';
+    document.getElementById('adminPass').value = '';
+  }
+
+  // ─── Init ────────────────────────────────────────
+  async function initAdmin() {
+    const now = new Date();
+    document.getElementById('dashDate').textContent =
+      now.toLocaleDateString('es-CL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+    await Promise.all([loadCustomers(), loadStats()]);
+  }
+
+  // ─── Load customers ──────────────────────────────
+  async function loadCustomers() {
+    const { data, error } = await sb
+      .from('customers')
+      .select('*')
+      .eq('business_id', CONFIG.BUSINESS_ID)
+      .eq('activo', true)
+      .order('sellos', { ascending: false });
+
+    if (error) { console.error(error); return; }
+
+    allCustomers = data || [];
+
+    // KPIs from customers
+    document.getElementById('kpiClientes').textContent = allCustomers.length;
+    const conReward = allCustomers.filter(c => c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0).length;
+    document.getElementById('kpiReward').textContent = conReward;
+
+    // Nivel distribution
+    const dist = { Bronce: 0, Plata: 0, Oro: 0 };
+    allCustomers.forEach(c => { dist[c.nivel] = (dist[c.nivel] || 0) + 1; });
+    renderDonut(dist);
+
+    renderTable(allCustomers);
+  }
+
+  // ─── Load stats ──────────────────────────────────
+  async function loadStats() {
+    try {
+      const { data, error } = await sb.rpc('admin_stats_sellos', {
+        p_business_id: CONFIG.BUSINESS_ID
+      });
+
+      if (error) throw error;
+
+      const stats = typeof data === 'string' ? JSON.parse(data) : data;
+
+      const hoy = stats?.detalle_hoy
+        ? stats.detalle_hoy.reduce((acc, r) => acc + (r.sellos || 0), 0)
+        : 0;
+      const mes = stats?.detalle_mes
+        ? stats.detalle_mes.reduce((acc, r) => acc + (r.sellos || 0), 0)
+        : 0;
+
+      document.getElementById('kpiHoy').textContent = hoy;
+      document.getElementById('kpiMes').textContent = mes;
+
+    } catch (err) {
+      console.error('Error stats:', err);
+      document.getElementById('kpiHoy').textContent = '—';
+      document.getElementById('kpiMes').textContent = '—';
+    }
+
+    // Load stamp logs for bar chart
+    await loadStampLogs();
+  }
+
+  async function loadStampLogs() {
+    const since = new Date();
+    since.setDate(since.getDate() - 13);
+
+    const { data, error } = await sb
+      .from('stamp_logs')
+      .select('created_at, sellos_delta')
+      .eq('business_id', CONFIG.BUSINESS_ID)
+      .gte('created_at', since.toISOString())
+      .gt('sellos_delta', 0);
+
+    if (error) { console.error(error); return; }
+
+    // Group by day
+    const dayMap = {};
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      dayMap[key] = 0;
+    }
+
+    (data || []).forEach(row => {
+      const key = row.created_at.slice(0, 10);
+      if (dayMap[key] !== undefined) dayMap[key] += row.sellos_delta;
+    });
+
+    const labels = Object.keys(dayMap).map(k => {
+      const d = new Date(k + 'T12:00:00');
+      return d.toLocaleDateString('es-CL', { month: 'short', day: 'numeric' });
+    });
+    const values = Object.values(dayMap);
+
+    renderBarChart(labels, values);
+  }
+
+  // ─── Charts ──────────────────────────────────────
+  function renderBarChart(labels, values) {
+    const ctx = document.getElementById('chartBars').getContext('2d');
+    if (chartBars) chartBars.destroy();
+    chartBars = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: 'rgba(0,196,167,0.5)',
+          borderColor: '#00C4A7',
+          borderWidth: 1,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            ticks: { color: '#8faab8', font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.04)' }
+          },
+          y: {
+            ticks: { color: '#8faab8', font: { size: 11 }, stepSize: 1 },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  function renderDonut(dist) {
+    const ctx = document.getElementById('chartDonut').getContext('2d');
+    if (chartDonut) chartDonut.destroy();
+    chartDonut = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bronce', 'Plata', 'Oro'],
+        datasets: [{
+          data: [dist.Bronce, dist.Plata, dist.Oro],
+          backgroundColor: ['#C49A6C', '#B0C4CE', '#F59E0B'],
+          borderColor: '#0d1a22',
+          borderWidth: 3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#8faab8', font: { size: 11 }, padding: 12 }
+          }
+        },
+        cutout: '65%',
+      }
+    });
+  }
+
+  // ─── Table ───────────────────────────────────────
+  function renderTable(customers) {
+    const tbody = document.getElementById('tableBody');
+    if (!customers.length) {
+      tbody.innerHTML = `<tr><td colspan="4">
+        <div class="empty-state">
+          <div class="icon">👥</div>
+          <p>No se encontraron clientes</p>
+        </div>
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = customers.map(c => {
+      const hasReward = c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0;
+      return `
+      <tr>
+        <td>
+          <div style="font-weight:600;font-size:14px;">${escHtml(c.nombre)}
+            ${hasReward ? '<span class="reward-tag">🎁 Recompensa</span>' : ''}
+          </div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:2px;">${escHtml(c.telefono || '—')}</div>
+        </td>
+        <td><span class="nivel-pill nivel-${c.nivel}">${c.nivel}</span></td>
+        <td style="font-weight:700;color:var(--accent);">
+          ${CONFIG.EMOJI_SELLO} ${c.sellos}
+        </td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-xs" onclick="quickStamp('${c.token}', ${c.sellos})">+1 ${CONFIG.EMOJI_SELLO}</button>
+            <button class="btn-xs" onclick="openEdit('${c.token}', '${escHtml(c.nombre)}', '${escHtml(c.telefono||'')}', '${escHtml(c.email||'')}', ${c.sellos})">✏️ Editar</button>
+            <button class="btn-xs danger" onclick="eliminarCliente('${c.token}', '${escHtml(c.nombre)}')">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    let filtered = allCustomers;
+    if (activeFilter !== 'Todos') filtered = filtered.filter(c => c.nivel === activeFilter);
+    if (q) filtered = filtered.filter(c =>
+      c.nombre.toLowerCase().includes(q) ||
+      (c.telefono || '').toLowerCase().includes(q)
+    );
+    renderTable(filtered);
+  }
+
+  function setFilter(nivel) {
+    activeFilter = nivel;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.nivel === nivel);
+    });
+    filterTable();
+  }
+
+  // ─── Quick stamp ─────────────────────────────────
+  async function quickStamp(token, sellosActuales) {
+    if (!confirm('¿Agregar 1 sello a este cliente?')) return;
+    const newSellos = sellosActuales + 1;
+    await actualizarSellos(token, newSellos);
+  }
+
+  async function actualizarSellos(token, sellos) {
+    const nivel = calcNivel(sellos);
+    const { error } = await sb.rpc('admin_set_sellos', {
+      p_token: token,
+      p_sellos: sellos
+    });
+    if (error) { alert('Error al actualizar: ' + error.message); return; }
+
+    // Update local
+    const c = allCustomers.find(x => x.token === token);
+    if (c) { c.sellos = sellos; c.nivel = nivel; }
+
+    filterTable();
+    // Refresh KPIs
+    const conReward = allCustomers.filter(c => c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0).length;
+    document.getElementById('kpiReward').textContent = conReward;
+    document.getElementById('kpiClientes').textContent = allCustomers.length;
+    const dist = { Bronce: 0, Plata: 0, Oro: 0 };
+    allCustomers.forEach(c => { dist[c.nivel] = (dist[c.nivel] || 0) + 1; });
+    renderDonut(dist);
+  }
+
+  function calcNivel(s) {
+    if (s >= 80) return 'Oro';
+    if (s >= 30) return 'Plata';
+    return 'Bronce';
+  }
+
+  // ─── Edit modal ──────────────────────────────────
+  function openEdit(token, nombre, telefono, email, sellos) {
+    document.getElementById('editToken').value   = token;
+    document.getElementById('editNombre').value  = nombre;
+    document.getElementById('editTelefono').value= telefono;
+    document.getElementById('editEmail').value   = email;
+    document.getElementById('editSellos').value  = sellos;
+    document.getElementById('editError').classList.remove('show');
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('editModal').classList.remove('show');
+  }
+
+  // Close modal clicking outside
+  document.getElementById('editModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('editModal')) closeModal();
+  });
+
+  async function guardarEdicion() {
+    const token    = document.getElementById('editToken').value;
+    const nombre   = document.getElementById('editNombre').value.trim();
+    const telefono = document.getElementById('editTelefono').value.trim();
+    const email    = document.getElementById('editEmail').value.trim();
+    const sellos   = parseInt(document.getElementById('editSellos').value) || 0;
+
+    if (!nombre || !telefono) {
+      const m = document.getElementById('editError');
+      m.textContent = 'Nombre y teléfono son requeridos.';
+      m.classList.add('show');
+      return;
+    }
+
+    const nivel = calcNivel(sellos);
+
+    const { error } = await sb
+      .from('customers')
+      .update({ nombre, telefono, email: email || null, sellos, nivel })
+      .eq('token', token)
+      .eq('business_id', CONFIG.BUSINESS_ID);
+
+    if (error) {
+      document.getElementById('editError').textContent = 'Error: ' + error.message;
+      document.getElementById('editError').classList.add('show');
+      return;
+    }
+
+    // Update local
+    const c = allCustomers.find(x => x.token === token);
+    if (c) { Object.assign(c, { nombre, telefono, email, sellos, nivel }); }
+
+    closeModal();
+    filterTable();
+
+    // Refresh donut
+    const dist = { Bronce: 0, Plata: 0, Oro: 0 };
+    allCustomers.forEach(c => { dist[c.nivel] = (dist[c.nivel] || 0) + 1; });
+    renderDonut(dist);
+  }
+
+  // ─── Delete ──────────────────────────────────────
+  async function eliminarCliente(token, nombre) {
+    if (!confirm(`¿Eliminar a "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    const { error } = await sb
+      .from('customers')
+      .update({ activo: false })
+      .eq('token', token)
+      .eq('business_id', CONFIG.BUSINESS_ID);
+
+    if (error) { alert('Error al eliminar: ' + error.message); return; }
+    allCustomers = allCustomers.filter(c => c.token !== token);
+    filterTable();
+    document.getElementById('kpiClientes').textContent = allCustomers.length;
+    const conReward = allCustomers.filter(c => c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0).length;
+    document.getElementById('kpiReward').textContent = conReward;
+  }
+
+  // ─── Crear cliente ───────────────────────────────
+  async function crearCliente() {
+    const nombre   = document.getElementById('newNombre').value.trim();
+    const telefono = document.getElementById('newTelefono').value.trim();
+    const email    = document.getElementById('newEmail').value.trim();
+    const sellos   = parseInt(document.getElementById('newSellos').value) || 0;
+
+    document.getElementById('addError').classList.remove('show');
+    document.getElementById('addSuccess').classList.remove('show');
+    document.getElementById('linkShare').style.display = 'none';
+
+    if (!nombre || !telefono) {
+      const m = document.getElementById('addError');
+      m.textContent = 'Nombre y teléfono son requeridos.';
+      m.classList.add('show');
+      return;
+    }
+
+    const nivel = calcNivel(sellos);
+
+    const { data, error } = await sb
+      .from('customers')
+      .insert({ nombre, telefono, email: email || null, sellos, nivel, business_id: CONFIG.BUSINESS_ID })
+      .select('token')
+      .single();
+
+    if (error) {
+      const m = document.getElementById('addError');
+      m.textContent = 'Error: ' + (error.message || 'No se pudo crear el cliente');
+      m.classList.add('show');
+      return;
+    }
+
+    const m = document.getElementById('addSuccess');
+    m.textContent = '✓ Cliente creado exitosamente.';
+    m.classList.add('show');
+
+    const link = window.location.origin + '/tarjeta.html?token=' + data.token;
+    newClientLink = link;
+    document.getElementById('linkUrl').textContent = link;
+    document.getElementById('linkShare').style.display = 'block';
+
+    // Reset form
+    document.getElementById('newNombre').value   = '';
+    document.getElementById('newTelefono').value = '';
+    document.getElementById('newEmail').value    = '';
+    document.getElementById('newSellos').value   = '0';
+
+    // Reload
+    await loadCustomers();
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(newClientLink).then(() => {
+      alert('Link copiado al portapapeles.');
+    });
+  }
+
+  // ─── Tabs ────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  }
+
+  // ─── Utils ───────────────────────────────────────
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
