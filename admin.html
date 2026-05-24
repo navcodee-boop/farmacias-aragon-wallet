@@ -441,6 +441,80 @@
       padding: 2px 7px;
       margin-left: 4px;
     }
+
+    /* CSV export button */
+    .btn-csv {
+      background: var(--elevated);
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 9px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .btn-csv:hover { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.4); color: #86efac; }
+
+    /* Historial modal */
+    .modal-lg { max-width: 600px; max-height: 80vh; overflow-y: auto; }
+    .historial-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .historial-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--elevated);
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    .historial-item .h-icon { font-size: 18px; flex-shrink: 0; }
+    .historial-item .h-info { flex: 1; }
+    .historial-item .h-delta {
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .h-delta.pos { color: var(--accent); }
+    .h-delta.neg { color: #FCD34D; }
+    .h-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .h-empty { text-align: center; padding: 32px; color: var(--text-sub); font-size: 14px; }
+
+    /* Link popup */
+    .link-popup {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 14px 20px;
+      max-width: 380px;
+      width: 90%;
+      z-index: 300;
+      display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .link-popup.show { display: block; }
+    .link-popup .lp-label { font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 6px; text-transform: uppercase; }
+    .link-popup .lp-url { font-size: 12px; color: var(--text-sub); word-break: break-all; margin-bottom: 10px; }
+    .link-popup .lp-btns { display: flex; gap: 8px; }
+    .lp-btn {
+      flex: 1;
+      background: var(--elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .lp-btn.primary { background: var(--accent); color: #060d12; border-color: transparent; }
   </style>
 </head>
 <body>
@@ -544,6 +618,7 @@
             <button class="filter-btn" data-nivel="Bronce" onclick="setFilter('Bronce')">Bronce</button>
             <button class="filter-btn" data-nivel="Plata" onclick="setFilter('Plata')">Plata</button>
             <button class="filter-btn" data-nivel="Oro" onclick="setFilter('Oro')">Oro</button>
+            <button class="btn-csv" onclick="exportarCSV()">⬇️ CSV</button>
           </div>
         </div>
 
@@ -603,6 +678,27 @@
     </div><!-- /main-content -->
   </div><!-- /layout -->
 </div><!-- /adminScreen -->
+
+<!-- ─── Modal historial de sellos ────────────────── -->
+<div class="modal-overlay" id="historialModal">
+  <div class="modal modal-lg">
+    <h3>📋 Historial de sellos — <span id="historialNombre"></span></h3>
+    <div id="historialList"><div class="h-empty">⏳ Cargando...</div></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-secondary-sm" style="width:100%;" onclick="closeHistorial()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Link popup ────────────────────────────────── -->
+<div class="link-popup" id="linkPopup">
+  <div class="lp-label">🔗 Tarjeta digital del cliente</div>
+  <div class="lp-url" id="linkPopupUrl"></div>
+  <div class="lp-btns">
+    <button class="lp-btn" onclick="closeLinkPopup()">Cerrar</button>
+    <button class="lp-btn primary" onclick="copyLinkPopup()">Copiar link</button>
+  </div>
+</div>
 
 <!-- ─── Modal editar cliente ─────────────────────── -->
 <div class="modal-overlay" id="editModal">
@@ -876,6 +972,8 @@
           <div class="action-btns">
             <button class="btn-xs" onclick="quickStamp('${c.token}', ${c.sellos})">+1 ${CONFIG.EMOJI_SELLO}</button>
             <button class="btn-xs" onclick="openEdit('${c.token}', '${escHtml(c.nombre)}', '${escHtml(c.telefono||'')}', '${escHtml(c.email||'')}', ${c.sellos})">✏️ Editar</button>
+            <button class="btn-xs" onclick="verLink('${c.token}', '${escHtml(c.nombre)}')">🔗 Link</button>
+            <button class="btn-xs" onclick="verHistorial('${c.id}', '${escHtml(c.nombre)}')">📋 Historial</button>
             <button class="btn-xs danger" onclick="eliminarCliente('${c.token}', '${escHtml(c.nombre)}')">🗑️</button>
           </div>
         </td>
@@ -1071,6 +1169,96 @@
     navigator.clipboard.writeText(newClientLink).then(() => {
       alert('Link copiado al portapapeles.');
     });
+  }
+
+  // ─── Ver link de tarjeta ─────────────────────────
+  let currentLinkPopup = '';
+  function verLink(token, nombre) {
+    const link = window.location.origin + '/tarjeta.html?token=' + token;
+    currentLinkPopup = link;
+    document.getElementById('linkPopupUrl').textContent = link;
+    document.getElementById('linkPopup').classList.add('show');
+  }
+  function closeLinkPopup() {
+    document.getElementById('linkPopup').classList.remove('show');
+  }
+  function copyLinkPopup() {
+    navigator.clipboard.writeText(currentLinkPopup).then(() => {
+      const btn = document.querySelector('.lp-btn.primary');
+      btn.textContent = '✓ Copiado';
+      setTimeout(() => { btn.textContent = 'Copiar link'; closeLinkPopup(); }, 1500);
+    });
+  }
+
+  // ─── Exportar CSV ────────────────────────────────
+  function exportarCSV() {
+    if (!allCustomers.length) { alert('No hay clientes para exportar.'); return; }
+    const header = ['Nombre', 'Teléfono', 'Email', 'Nivel', 'Sellos', 'Fecha registro'];
+    const rows = allCustomers.map(c => [
+      `"${(c.nombre||'').replace(/"/g,'""')}"`,
+      `"${(c.telefono||'').replace(/"/g,'""')}"`,
+      `"${(c.email||'').replace(/"/g,'""')}"`,
+      c.nivel,
+      c.sellos,
+      c.created_at ? new Date(c.created_at).toLocaleDateString('es-CL') : '',
+    ]);
+    const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'clientes-farmacias-aragon-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── Historial de sellos ──────────────────────────
+  function closeHistorial() {
+    document.getElementById('historialModal').classList.remove('show');
+  }
+  document.getElementById('historialModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('historialModal')) closeHistorial();
+  });
+
+  async function verHistorial(customerId, nombre) {
+    document.getElementById('historialNombre').textContent = nombre;
+    document.getElementById('historialList').innerHTML = '<div class="h-empty">⏳ Cargando...</div>';
+    document.getElementById('historialModal').classList.add('show');
+
+    const { data, error } = await sb
+      .from('stamp_logs')
+      .select('created_at, sellos_delta, origen')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error || !data?.length) {
+      document.getElementById('historialList').innerHTML =
+        '<div class="h-empty">Sin registros de sellos aún.</div>';
+      return;
+    }
+
+    const iconMap = { checkin: '💊', admin: '⚙️', canje: '🎁' };
+    const origenMap = { checkin: 'Check-in', admin: 'Admin', canje: 'Canje de recompensa' };
+
+    document.getElementById('historialList').innerHTML = `
+      <div class="historial-list">
+        ${data.map(r => {
+          const pos = r.sellos_delta > 0;
+          const fecha = new Date(r.created_at).toLocaleString('es-CL', {
+            day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'
+          });
+          return `
+          <div class="historial-item">
+            <span class="h-icon">${iconMap[r.origen] || '📝'}</span>
+            <div class="h-info">
+              <div>${origenMap[r.origen] || r.origen}</div>
+              <div class="h-date">${fecha}</div>
+            </div>
+            <span class="h-delta ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${r.sellos_delta}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
   }
 
   // ─── Tabs ────────────────────────────────────────
