@@ -629,11 +629,12 @@
                 <th>Cliente</th>
                 <th>Nivel</th>
                 <th>Total sellos</th>
+                <th>Registro</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="tableBody">
-              <tr><td colspan="4"><div class="empty-state"><div class="icon">⏳</div><p>Cargando clientes...</p></div></td></tr>
+              <tr><td colspan="5"><div class="empty-state"><div class="icon">⏳</div><p>Cargando clientes...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -752,6 +753,8 @@
   let newClientLink = '';
   let chartBars = null;
   let chartDonut = null;
+  let editOriginalSellos = 0;
+  let editCustomerId = '';
 
   // ─── Auth ────────────────────────────────────────
   function checkAdminPass() {
@@ -945,7 +948,7 @@
   function renderTable(customers) {
     const tbody = document.getElementById('tableBody');
     if (!customers.length) {
-      tbody.innerHTML = `<tr><td colspan="4">
+      tbody.innerHTML = `<tr><td colspan="5">
         <div class="empty-state">
           <div class="icon">👥</div>
           <p>No se encontraron clientes</p>
@@ -956,6 +959,9 @@
 
     tbody.innerHTML = customers.map(c => {
       const hasReward = c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0;
+      const fechaReg = c.created_at
+        ? new Date(c.created_at).toLocaleDateString('es-CL', { day:'2-digit', month:'short', year:'numeric' })
+        : '—';
       return `
       <tr>
         <td>
@@ -968,10 +974,11 @@
         <td style="font-weight:700;color:var(--accent);">
           ${CONFIG.EMOJI_SELLO} ${c.sellos}
         </td>
+        <td style="font-size:12px;color:var(--text-sub);white-space:nowrap;">${fechaReg}</td>
         <td>
           <div class="action-btns">
-            <button class="btn-xs" onclick="quickStamp('${c.token}', ${c.sellos})">+1 ${CONFIG.EMOJI_SELLO}</button>
-            <button class="btn-xs" onclick="openEdit('${c.token}', '${escHtml(c.nombre)}', '${escHtml(c.telefono||'')}', '${escHtml(c.email||'')}', ${c.sellos})">✏️ Editar</button>
+            <button class="btn-xs" onclick="quickStamp('${c.token}', '${c.id}', ${c.sellos})">+1 ${CONFIG.EMOJI_SELLO}</button>
+            <button class="btn-xs" onclick="openEdit('${c.token}', '${c.id}', '${escHtml(c.nombre)}', '${escHtml(c.telefono||'')}', '${escHtml(c.email||'')}', ${c.sellos})">✏️ Editar</button>
             <button class="btn-xs" onclick="verLink('${c.token}', '${escHtml(c.nombre)}')">🔗 Link</button>
             <button class="btn-xs" onclick="verHistorial('${c.id}', '${escHtml(c.nombre)}')">📋 Historial</button>
             <button class="btn-xs danger" onclick="eliminarCliente('${c.token}', '${escHtml(c.nombre)}')">🗑️</button>
@@ -1001,19 +1008,31 @@
   }
 
   // ─── Quick stamp ─────────────────────────────────
-  async function quickStamp(token, sellosActuales) {
+  async function quickStamp(token, customerId, sellosActuales) {
     if (!confirm('¿Agregar 1 sello a este cliente?')) return;
     const newSellos = sellosActuales + 1;
-    await actualizarSellos(token, newSellos);
+    await actualizarSellos(token, customerId, newSellos, 1);
   }
 
-  async function actualizarSellos(token, sellos) {
+  async function actualizarSellos(token, customerId, sellos, delta) {
     const nivel = calcNivel(sellos);
     const { error } = await sb.rpc('admin_set_sellos', {
       p_token: token,
       p_sellos: sellos
     });
     if (error) { alert('Error al actualizar: ' + error.message); return; }
+
+    // Registrar en stamp_logs para que el dashboard refleje el cambio
+    if (delta !== 0 && customerId) {
+      await sb.from('stamp_logs').insert({
+        customer_id: customerId,
+        business_id: CONFIG.BUSINESS_ID,
+        sellos_delta: delta,
+        origen: 'admin'
+      });
+      // Refrescar KPIs del dashboard
+      loadStats();
+    }
 
     // Update local
     const c = allCustomers.find(x => x.token === token);
@@ -1036,7 +1055,9 @@
   }
 
   // ─── Edit modal ──────────────────────────────────
-  function openEdit(token, nombre, telefono, email, sellos) {
+  function openEdit(token, customerId, nombre, telefono, email, sellos) {
+    editOriginalSellos = sellos;
+    editCustomerId = customerId;
     document.getElementById('editToken').value   = token;
     document.getElementById('editNombre').value  = nombre;
     document.getElementById('editTelefono').value= telefono;
@@ -1081,6 +1102,18 @@
       document.getElementById('editError').textContent = 'Error: ' + error.message;
       document.getElementById('editError').classList.add('show');
       return;
+    }
+
+    // Registrar en stamp_logs si hubo cambio de sellos
+    const delta = sellos - editOriginalSellos;
+    if (delta !== 0 && editCustomerId) {
+      await sb.from('stamp_logs').insert({
+        customer_id: editCustomerId,
+        business_id: CONFIG.BUSINESS_ID,
+        sellos_delta: delta,
+        origen: 'admin'
+      });
+      loadStats();
     }
 
     // Update local
