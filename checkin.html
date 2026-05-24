@@ -191,9 +191,29 @@
       font-size: 14px;
       font-weight: 600;
       color: #FCD34D;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
       display: none;
     }
+
+    /* Canje button */
+    .btn-canje {
+      width: 100%;
+      background: linear-gradient(135deg, #B45309, #F59E0B);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 15px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: transform 0.1s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      display: none;
+    }
+    .btn-canje:active { transform: scale(0.98); opacity: 0.85; }
+    .btn-canje:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* Add stamp button */
     .btn-add-stamp {
@@ -389,6 +409,9 @@
 
       <div class="reward-badge" id="rewardBadge">🎁 ¡Ya tiene recompensa disponible!</div>
 
+      <button class="btn-canje" id="btnCanjear" onclick="canjearRecompensa()">
+        🎁 Canjear recompensa (-10 sellos)
+      </button>
       <button class="btn-add-stamp" id="btnAgregar" onclick="agregarSello()">
         ➕ Agregar Sello 💊
       </button>
@@ -426,13 +449,25 @@
   const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
   let clienteActual = null;
 
-  // ── Auth ──────────────────────────────────────────
+  // ── Auth + sesión persistente ─────────────────────
+  const SESSION_KEY = 'aragon_checkin_auth';
+
+  function abrirPanel() {
+    document.getElementById('gatePanel').style.display = 'none';
+    document.getElementById('mainPanel').style.display = 'block';
+    document.getElementById('inputTelefono').focus();
+  }
+
+  // Restaurar sesión si ya autenticó antes en esta pestaña
+  if (sessionStorage.getItem(SESSION_KEY) === 'ok') {
+    abrirPanel();
+  }
+
   function checkPass() {
     const val = document.getElementById('inputPass').value;
     if (val === CONFIG.ADMIN_PASSWORD) {
-      document.getElementById('gatePanel').style.display = 'none';
-      document.getElementById('mainPanel').style.display = 'block';
-      document.getElementById('inputTelefono').focus();
+      sessionStorage.setItem(SESSION_KEY, 'ok');
+      abrirPanel();
     } else {
       const m = document.getElementById('msgGate');
       m.textContent = 'Contraseña incorrecta.';
@@ -503,9 +538,11 @@
 
     renderGrid(c.sellos);
 
+    const tieneReward = c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0;
     const reward = document.getElementById('rewardBadge');
-    reward.style.display = (c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0)
-      ? 'block' : 'none';
+    reward.style.display = tieneReward ? 'block' : 'none';
+    const btnCanje = document.getElementById('btnCanjear');
+    btnCanje.style.display = tieneReward ? 'block' : 'none';
 
     document.getElementById('clientCard').style.display = 'block';
     document.getElementById('inputTelefono').value = '';
@@ -585,11 +622,64 @@
     resetPanel();
   }
 
+  // ── Canjear recompensa ────────────────────────────
+  async function canjearRecompensa() {
+    if (!clienteActual) return;
+    if (!confirm(`¿Canjear recompensa de ${clienteActual.nombre.split(' ')[0]}? Se restarán ${CONFIG.SELLOS_POR_REWARD} sellos.`)) return;
+
+    const btn = document.getElementById('btnCanjear');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Canjeando...';
+
+    const nuevosSellos = clienteActual.sellos - CONFIG.SELLOS_POR_REWARD;
+    const nuevoNivel   = calcNivel(nuevosSellos);
+
+    try {
+      // Actualizar sellos
+      const { error: errUpdate } = await sb
+        .from('customers')
+        .update({ sellos: nuevosSellos, nivel: nuevoNivel })
+        .eq('token', clienteActual.token)
+        .eq('business_id', CONFIG.BUSINESS_ID);
+      if (errUpdate) throw errUpdate;
+
+      // Registrar log de canje
+      const { error: errLog } = await sb
+        .from('stamp_logs')
+        .insert({
+          customer_id:  clienteActual.id,
+          business_id:  CONFIG.BUSINESS_ID,
+          sellos_delta: -CONFIG.SELLOS_POR_REWARD,
+          origen:       'canje',
+        });
+      if (errLog) console.warn('Log canje fallido:', errLog);
+
+      clienteActual.sellos = nuevosSellos;
+      clienteActual.nivel  = nuevoNivel;
+
+      // Overlay de éxito con mensaje de canje
+      document.getElementById('successTitle').textContent = '¡Recompensa canjeada! 🎁';
+      document.getElementById('successSub').textContent   =
+        clienteActual.nombre.split(' ')[0] + ' ahora tiene ' + nuevosSellos + ' sellos ' + CONFIG.EMOJI_SELLO;
+      document.getElementById('successNivel').textContent = '✓ Canje registrado correctamente';
+      document.getElementById('successOverlay').classList.add('show');
+
+    } catch (err) {
+      console.error(err);
+      alert('Error al canjear. Intenta de nuevo.');
+      btn.disabled = false;
+      btn.innerHTML = '🎁 Canjear recompensa (-10 sellos)';
+    }
+  }
+
   function resetPanel() {
     clienteActual = null;
     document.getElementById('clientCard').style.display = 'none';
     document.getElementById('btnAgregar').disabled = false;
     document.getElementById('btnAgregar').innerHTML = '➕ Agregar Sello ' + CONFIG.EMOJI_SELLO;
+    document.getElementById('btnCanjear').style.display = 'none';
+    document.getElementById('btnCanjear').disabled = false;
+    document.getElementById('btnCanjear').innerHTML = '🎁 Canjear recompensa (-10 sellos)';
     document.getElementById('inputTelefono').focus();
   }
 
