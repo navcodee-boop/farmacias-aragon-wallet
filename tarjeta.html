@@ -8,6 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#060d12" />
   <title>Mi Tarjeta — Farmacia Wallet</title>
+  <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
@@ -298,6 +299,39 @@
       border-radius: 99px;
     }
 
+    /* Share button */
+    .btn-share {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 15px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: background 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      text-decoration: none;
+    }
+    .btn-share:hover { background: var(--accent-dim); border-color: rgba(0,196,167,0.3); }
+    .btn-share:active { opacity: 0.8; }
+
+    .share-msg {
+      text-align: center;
+      font-size: 12px;
+      color: var(--success);
+      margin-bottom: 12px;
+      display: none;
+    }
+    .share-msg.show { display: block; }
+
     /* Footer */
     .footer-hint {
       background: var(--elevated);
@@ -414,6 +448,12 @@
         <span class="level-current-tag" id="currentOro" style="display:none;">✓ Actual</span>
       </div>
     </div>
+
+    <!-- Share button -->
+    <button class="btn-share" onclick="compartirTarjeta()">
+      📤 Compartir mi tarjeta
+    </button>
+    <div class="share-msg" id="shareMsg">✓ Link copiado al portapapeles</div>
 
     <!-- Footer hint -->
     <div class="footer-hint">
@@ -628,6 +668,31 @@
         </div>`;
       card.appendChild(row);
     });
+  }
+
+  // ── Compartir tarjeta ─────────────────────────────
+  async function compartirTarjeta() {
+    const url   = window.location.href;
+    const title = CONFIG.NOMBRE_NEGOCIO + ' — Mi tarjeta de fidelización';
+    const text  = '¡Mira mi tarjeta de puntos en ' + CONFIG.NOMBRE_NEGOCIO + '! 💊';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+      } catch (e) {
+        // Usuario canceló el share — no hacer nada
+      }
+    } else {
+      // Fallback: copiar al portapapeles
+      try {
+        await navigator.clipboard.writeText(url);
+        const msg = document.getElementById('shareMsg');
+        msg.classList.add('show');
+        setTimeout(() => msg.classList.remove('show'), 3000);
+      } catch (e) {
+        prompt('Copia este link:', url);
+      }
+    }
   }
 
   loadCard();
