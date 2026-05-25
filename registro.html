@@ -141,6 +141,41 @@
       color: var(--muted);
       margin-top: 5px;
     }
+    /* Prefijo teléfono */
+    .phone-wrap {
+      display: flex;
+      align-items: stretch;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .phone-wrap:focus-within { border-color: var(--accent); }
+    .phone-prefix {
+      padding: 13px 12px 13px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: rgba(255,255,255,0.04);
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+      user-select: none;
+    }
+    .phone-wrap input {
+      flex: 1;
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 13px 14px !important;
+      outline: none;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      -webkit-appearance: none;
+      width: 0;
+    }
+    .phone-wrap input::placeholder { color: var(--muted); }
 
     /* Button */
     .btn-primary {
@@ -238,8 +273,11 @@
     </div>
     <div class="field">
       <label for="telefono">Teléfono *</label>
-      <input type="tel" id="telefono" placeholder="+56 9 1234 5678" autocomplete="tel" inputmode="tel" />
-      <div class="hint">Si ya eres cliente, te encontraremos por tu número</div>
+      <div class="phone-wrap">
+        <span class="phone-prefix">+56</span>
+        <input type="tel" id="telefono" placeholder="912345678" autocomplete="tel" inputmode="numeric" maxlength="9" />
+      </div>
+      <div class="hint">Ingresa los 9 dígitos de tu número móvil</div>
     </div>
     <div class="field">
       <label for="email">Email <span style="color:var(--muted)">(opcional)</span></label>
@@ -291,21 +329,20 @@
     document.getElementById('msgSuccess').classList.remove('show');
   }
 
-  function normalizePhone(p) {
-    return p.replace(/\s+/g, '').trim();
-  }
-
   async function registrar() {
-    const nombre   = document.getElementById('nombre').value.trim();
-    const telefono = normalizePhone(document.getElementById('telefono').value);
-    const email    = document.getElementById('email').value.trim();
-    const btn      = document.getElementById('btnRegistrar');
+    const nombre  = document.getElementById('nombre').value.trim();
+    const digits  = document.getElementById('telefono').value.replace(/\D/g, '');
+    const email   = document.getElementById('email').value.trim();
+    const btn     = document.getElementById('btnRegistrar');
 
     clearMsgs();
 
     if (!nombre) return showError('Por favor ingresa tu nombre.');
-    if (!telefono) return showError('Por favor ingresa tu teléfono.');
-    if (telefono.length < 7) return showError('El teléfono parece muy corto.');
+    if (!digits)  return showError('Por favor ingresa tu teléfono.');
+    if (digits.length !== 9) return showError('El número debe tener exactamente 9 dígitos.');
+    if (!digits.startsWith('9')) return showError('El número debe comenzar con 9.');
+
+    const telefono = '+56' + digits;
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>';
@@ -352,7 +389,7 @@
       console.error(err);
       showError('Ocurrió un error. Por favor intenta de nuevo.');
       btn.disabled = false;
-      btn.innerHTML = 'Unirme al programa ⚕️';
+      btn.innerHTML = 'Unirme al programa ' + CONFIG.EMOJI_MARCA;
     }
   }
 
