@@ -183,3 +183,88 @@ CREATE POLICY "anon_all_stamp_logs" ON stamp_logs
 -- ✅ Setup completo. Copia ahora Project URL y anon key desde:
 --    Settings → API → Project URL / Project API keys (anon public)
 -- ═══════════════════════════════════════════════════════════════════
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- MIGRACIÓN v2 — Sistema de canjes sin restar sellos acumulados
+-- Ejecuta este bloque en el SQL Editor de Supabase
+-- ═══════════════════════════════════════════════════════════════════
+
+-- ─── 7. COLUMNA sellos_canjeados en customers ────────────────────────────────
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS sellos_canjeados INTEGER DEFAULT 0;
+
+
+-- ─── 8. TABLA CANJES ─────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS canjes (
+  id                 UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at         TIMESTAMPTZ DEFAULT now(),
+  customer_id        UUID REFERENCES customers(id) ON DELETE CASCADE,
+  business_id        TEXT NOT NULL,
+  sellos_descontados INTEGER DEFAULT 10
+);
+
+CREATE INDEX IF NOT EXISTS idx_canjes_customer ON canjes(customer_id);
+CREATE INDEX IF NOT EXISTS idx_canjes_business  ON canjes(business_id, created_at);
+
+ALTER TABLE canjes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_all_canjes" ON canjes;
+CREATE POLICY "anon_all_canjes" ON canjes
+  FOR ALL TO anon USING (true) WITH CHECK (true);
+
+
+-- ─── 9. FUNCIÓN: canjear_premio ──────────────────────────────────────────────
+-- Incrementa sellos_canjeados (NO resta sellos) e inserta en tabla canjes.
+-- El nivel siempre refleja el total acumulado real.
+CREATE OR REPLACE FUNCTION canjear_premio(p_token TEXT, p_business_id TEXT)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_customer            customers%ROWTYPE;
+  v_sellos_disponibles  INTEGER;
+  v_premios_disponibles INTEGER;
+BEGIN
+  SELECT * INTO v_customer
+  FROM customers
+  WHERE token       = p_token
+    AND business_id = p_business_id
+    AND activo      = true;
+
+  IF NOT FOUND THEN
+    RETURN json_build_object('ok', false, 'error', 'cliente_no_encontrado');
+  END IF;
+
+  v_sellos_disponibles := v_customer.sellos - COALESCE(v_customer.sellos_canjeados, 0);
+
+  IF v_sellos_disponibles < 10 THEN
+    RETURN json_build_object('ok', false, 'error', 'sin_premios');
+  END IF;
+
+  -- Incrementar sellos_canjeados (sellos totales no se tocan)
+  UPDATE customers
+  SET sellos_canjeados = COALESCE(sellos_canjeados, 0) + 10
+  WHERE id = v_customer.id;
+
+  -- Registrar canje
+  INSERT INTO canjes(customer_id, business_id, sellos_descontados)
+  VALUES (v_customer.id, p_business_id, 10);
+
+  v_sellos_disponibles  := v_sellos_disponibles - 10;
+  v_premios_disponibles := FLOOR(v_sellos_disponibles / 10);
+
+  RETURN json_build_object(
+    'ok',                  true,
+    'nombre',              v_customer.nombre,
+    'sellos',              v_customer.sellos,
+    'sellos_canjeados',    COALESCE(v_customer.sellos_canjeados, 0) + 10,
+    'sellos_disponibles',  v_sellos_disponibles,
+    'premios_disponibles', v_premios_disponibles,
+    'nivel',               v_customer.nivel
+  );
+END;
+$$;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- ✅ Migración v2 completa.
+-- ═══════════════════════════════════════════════════════════════════
