@@ -522,7 +522,6 @@
     SUPABASE_URL:      'https://tsevjwdkvcqivektwyuo.supabase.co',
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzZXZqd2RrdmNxaXZla3R3eXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1OTQ2NTIsImV4cCI6MjA5NTE3MDY1Mn0.M2bGm_Kffpl5yC5h709WhT5LrA_Fg2A1AZ2gjeL2k6k',
     BUSINESS_ID:       'farmacia-001',
-    ADMIN_PASSWORD:    'admin123',
     SELLOS_POR_REWARD: 10,
     NOMBRE_NEGOCIO:    'Farmacias Aragón',
     EMOJI_SELLO:       '💊',
@@ -597,7 +596,7 @@
     try {
       const { data, error } = await sb
         .from('customers')
-        .select('nombre, sellos, nivel, telefono, created_at')
+        .select('nombre, sellos, sellos_canjeados, nivel, telefono, created_at')
         .eq('token', token)
         .eq('business_id', CONFIG.BUSINESS_ID)
         .single();
@@ -621,13 +620,14 @@
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display  = 'block';
 
-    const nivel   = calcNivel(c.sellos);
-    const sellos  = c.sellos;
-    const enCiclo = sellos % CONFIG.SELLOS_POR_REWARD;
-    const progPct = (enCiclo / CONFIG.SELLOS_POR_REWARD) * 100;
-    const faltanParaReward = enCiclo === 0 && sellos > 0
-      ? 0
-      : CONFIG.SELLOS_POR_REWARD - enCiclo;
+    const nivel       = calcNivel(c.sellos);
+    const sellos      = c.sellos;
+    const canjeados   = c.sellos_canjeados || 0;
+    const sellosDisp  = sellos - canjeados;
+    const premiosDisp = Math.floor(sellosDisp / CONFIG.SELLOS_POR_REWARD);
+    const enCiclo     = sellosDisp % CONFIG.SELLOS_POR_REWARD;
+    const progPct     = (enCiclo / CONFIG.SELLOS_POR_REWARD) * 100;
+    const faltanParaReward = CONFIG.SELLOS_POR_REWARD - enCiclo;
 
     // Header
     document.getElementById('clientName').textContent   = c.nombre;
@@ -639,15 +639,18 @@
     badge.textContent = nivel + ' ' + (nivel === 'Oro' ? '🥇' : nivel === 'Plata' ? '🥈' : '🥉');
     badge.className = 'nivel-badge nivel-' + nivel;
 
-    // Progress
-    const rewardListo = (sellos > 0 && sellos % CONFIG.SELLOS_POR_REWARD === 0);
-    if (rewardListo) {
-      document.getElementById('progressLabel').textContent = '¡Recompensa disponible!';
+    // Progress — basado en sellos disponibles (sin canjeados)
+    if (premiosDisp > 0) {
+      document.getElementById('progressLabel').textContent = premiosDisp > 1 ? `¡Tienes ${premiosDisp} premios disponibles!` : '¡Premio disponible!';
       document.getElementById('progressCount').textContent = CONFIG.SELLOS_POR_REWARD + '/' + CONFIG.SELLOS_POR_REWARD;
       document.getElementById('progressFill').style.width = '100%';
-      document.getElementById('rewardReady').style.display = 'block';
+      const rewardEl = document.getElementById('rewardReady');
+      rewardEl.textContent = premiosDisp > 1
+        ? `🎉 ¡Tienes ${premiosDisp} premios disponibles! Muéstrale esto al farmacéutico`
+        : '🎉 ¡Tienes un premio disponible! Muéstrale esto al farmacéutico';
+      rewardEl.style.display = 'block';
     } else {
-      document.getElementById('progressLabel').textContent = 'Faltan ' + faltanParaReward + ' para recompensa';
+      document.getElementById('progressLabel').textContent = 'Faltan ' + faltanParaReward + ' para premio';
       document.getElementById('progressCount').textContent = enCiclo + '/' + CONFIG.SELLOS_POR_REWARD;
       setTimeout(() => {
         document.getElementById('progressFill').style.width = progPct + '%';
@@ -659,8 +662,8 @@
     document.getElementById('currentPlata').style.display  = nivel === 'Plata'  ? 'inline-block' : 'none';
     document.getElementById('currentOro').style.display    = nivel === 'Oro'    ? 'inline-block' : 'none';
 
-    // Stamp grid — agrupar por 10
-    renderStampGrid(sellos);
+    // Stamp grid — mostrar sellos disponibles (sin canjeados)
+    renderStampGrid(sellosDisp);
 
     // Benefits
     renderBenefits(nivel, sellos);
