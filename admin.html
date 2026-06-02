@@ -619,6 +619,99 @@
     .h-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .h-empty { text-align: center; padding: 32px; color: var(--text-sub); font-size: 14px; }
 
+    /* ─── Casi listo badge ──────────────────────────── */
+    .casi-listo-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(0,196,167,0.12);
+      color: var(--accent);
+      border: 1px solid rgba(0,196,167,0.3);
+      border-radius: 99px;
+      padding: 2px 7px;
+      margin-left: 4px;
+    }
+
+    /* ─── Toast notifications ───────────────────────── */
+    #toastContainer {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      align-items: flex-end;
+    }
+    .toast {
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      pointer-events: auto;
+      max-width: 300px;
+      animation: toastIn 0.25s ease forwards;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .toast-success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); color: #86efac; }
+    .toast-error   { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; }
+    .toast-info    { background: rgba(0,196,167,0.15); border: 1px solid rgba(0,196,167,0.4); color: var(--accent); }
+
+    /* ─── KPI clickable ─────────────────────────────── */
+    .kpi-clickable {
+      cursor: pointer;
+      transition: transform 0.12s, border-color 0.15s;
+      user-select: none;
+    }
+    .kpi-clickable:hover  { border-color: var(--accent); transform: translateY(-2px); }
+    .kpi-clickable:active { transform: scale(0.97); }
+
+    /* ─── Mobile UX ─────────────────────────────────── */
+    /* Prevent iOS auto-zoom on input focus */
+    input[type="text"], input[type="email"], input[type="tel"],
+    input[type="number"], input[type="password"], textarea, select {
+      font-size: 16px !important;
+    }
+    /* Min tap target */
+    .nav-item { min-height: 44px; }
+    .btn-xs   { min-height: 36px; align-items: center; }
+
+    @media (max-width: 640px) {
+      .topbar h1 { font-size: 14px; }
+      .topbar .admin-badge { display: none; }
+      .main-content { padding: 16px 12px; }
+
+      /* KPI grid — 2 columnas */
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .kpi-value { font-size: 28px; }
+
+      /* Ocultar columna Registro en móvil */
+      .customers-table th:nth-child(4),
+      .customers-table td:nth-child(4) { display: none; }
+
+      /* Acciones en fila completa */
+      .action-btns { flex-wrap: wrap; gap: 4px; }
+      .btn-xs { font-size: 11px; padding: 6px 8px; }
+
+      /* Modales desde abajo */
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal { border-radius: 20px 20px 0 0; max-height: 90svh; overflow-y: auto; width: 100%; max-width: 100%; }
+      .modal.modal-lg { max-height: 85svh; }
+
+      /* Toast */
+      #toastContainer { right: 10px; left: 10px; align-items: stretch; }
+      .toast { max-width: 100%; text-align: center; }
+
+      /* Search row */
+      .table-controls { flex-direction: column; }
+      .table-controls input { min-width: auto; }
+    }
+
     /* Link popup */
     .link-popup {
       position: fixed;
@@ -728,6 +821,25 @@
             <div class="kpi-label">Con recompensa</div>
             <div class="kpi-value" id="kpiReward">—</div>
             <div class="kpi-desc">🎁 recompensa disponible</div>
+          </div>
+        </div>
+
+        <!-- KPIs de nivel — clickables para filtrar clientes -->
+        <div class="kpi-grid" style="margin-top:-14px;margin-bottom:28px;">
+          <div class="kpi-card kpi-clickable" onclick="filterByLevel('Bronce')" title="Ver clientes Bronce">
+            <div class="kpi-label">🥉 Bronce</div>
+            <div class="kpi-value" id="kpiBronce" style="font-size:28px;color:#C49A6C;">—</div>
+            <div class="kpi-desc">clientes nivel Bronce</div>
+          </div>
+          <div class="kpi-card kpi-clickable" onclick="filterByLevel('Plata')" title="Ver clientes Plata">
+            <div class="kpi-label">🥈 Plata</div>
+            <div class="kpi-value" id="kpiPlata" style="font-size:28px;color:#B0C4CE;">—</div>
+            <div class="kpi-desc">clientes nivel Plata</div>
+          </div>
+          <div class="kpi-card kpi-clickable" onclick="filterByLevel('Oro')" title="Ver clientes Oro">
+            <div class="kpi-label">🥇 Oro</div>
+            <div class="kpi-value" id="kpiOro" style="font-size:28px;color:#F59E0B;">—</div>
+            <div class="kpi-desc">clientes nivel Oro</div>
           </div>
         </div>
 
@@ -910,6 +1022,9 @@
   </div>
 </div>
 
+<!-- Toast container -->
+<div id="toastContainer"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const CONFIG = {
@@ -925,6 +1040,31 @@
 
   document.getElementById('adminTitle').textContent = CONFIG.NOMBRE_NEGOCIO + ' — Admin';
   document.title = CONFIG.NOMBRE_NEGOCIO + ' — Admin';
+
+  // ─── Toast ───────────────────────────────────────
+  function toast(msg, type = 'success', duration = 3000) {
+    const c  = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    c.appendChild(el);
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.3s, transform 0.3s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(8px)';
+      setTimeout(() => el.remove(), 300);
+    }, duration);
+  }
+
+  // ─── Filter by level (dashboard → clientes) ──────
+  function filterByLevel(nivel) {
+    switchTab('clientes');
+    setFilter(nivel);
+  }
+
+  // ─── Body scroll lock for modals ─────────────────
+  function lockScroll()   { document.body.style.overflow = 'hidden'; }
+  function unlockScroll() { document.body.style.overflow = ''; }
 
   const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
@@ -983,12 +1123,17 @@
 
     // KPIs from customers
     document.getElementById('kpiClientes').textContent = allCustomers.length;
-    const conReward = allCustomers.filter(c => c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0).length;
+    const conReward = allCustomers.filter(c =>
+      Math.floor((c.sellos - (c.sellos_canjeados || 0)) / CONFIG.SELLOS_POR_REWARD) > 0
+    ).length;
     document.getElementById('kpiReward').textContent = conReward;
 
     // Nivel distribution
     const dist = { Bronce: 0, Plata: 0, Oro: 0 };
     allCustomers.forEach(c => { dist[c.nivel] = (dist[c.nivel] || 0) + 1; });
+    document.getElementById('kpiBronce').textContent = dist.Bronce;
+    document.getElementById('kpiPlata').textContent  = dist.Plata;
+    document.getElementById('kpiOro').textContent    = dist.Oro;
     renderDonut(dist);
 
     renderTable(allCustomers);
@@ -1138,7 +1283,10 @@
     }
 
     tbody.innerHTML = customers.map(c => {
-      const hasReward = c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0;
+      const sellosDisp  = c.sellos - (c.sellos_canjeados || 0);
+      const premiosDisp = Math.floor(sellosDisp / CONFIG.SELLOS_POR_REWARD);
+      const hasReward   = premiosDisp > 0;
+      const casiListo   = !hasReward && sellosDisp > 0 && (sellosDisp % CONFIG.SELLOS_POR_REWARD === CONFIG.SELLOS_POR_REWARD - 1);
       const fechaReg = c.created_at
         ? new Date(c.created_at).toLocaleDateString('es-CL', { day:'2-digit', month:'short', year:'numeric' })
         : '—';
@@ -1146,7 +1294,8 @@
       <tr>
         <td>
           <div style="font-weight:600;font-size:14px;">${escHtml(c.nombre)}
-            ${hasReward ? '<span class="reward-tag">🎁 Recompensa</span>' : ''}
+            ${hasReward ? `<span class="reward-tag">🎁 ${premiosDisp > 1 ? premiosDisp + ' premios' : 'Premio'}</span>` : ''}
+            ${casiListo ? '<span class="casi-listo-tag">⚡ Casi listo</span>' : ''}
           </div>
           <div style="font-size:12px;color:var(--text-sub);margin-top:2px;">${escHtml(c.telefono || '—')}</div>
         </td>
@@ -1189,7 +1338,7 @@
 
   // ─── Quick stamp ─────────────────────────────────
   async function quickStamp(token, customerId, sellosActuales) {
-    if (!confirm('¿Agregar 1 sello a este cliente?')) return;
+    if (navigator.vibrate) navigator.vibrate(50);
     const newSellos = sellosActuales + 1;
     await actualizarSellos(token, customerId, newSellos, 1);
   }
@@ -1200,7 +1349,7 @@
       p_token: token,
       p_sellos: sellos
     });
-    if (error) { alert('Error al actualizar: ' + error.message); return; }
+    if (error) { toast('Error al actualizar: ' + error.message, 'error'); return; }
 
     // Registrar en stamp_logs para que el dashboard refleje el cambio
     if (delta !== 0 && customerId) {
@@ -1210,7 +1359,6 @@
         sellos_delta: delta,
         origen: 'admin'
       });
-      // Refrescar KPIs del dashboard
       loadStats();
     }
 
@@ -1220,12 +1368,18 @@
 
     filterTable();
     // Refresh KPIs
-    const conReward = allCustomers.filter(c => c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0).length;
-    document.getElementById('kpiReward').textContent = conReward;
-    document.getElementById('kpiClientes').textContent = allCustomers.length;
+    const conReward = allCustomers.filter(c =>
+      Math.floor((c.sellos - (c.sellos_canjeados || 0)) / CONFIG.SELLOS_POR_REWARD) > 0
+    ).length;
+    document.getElementById('kpiReward').textContent    = conReward;
+    document.getElementById('kpiClientes').textContent  = allCustomers.length;
     const dist = { Bronce: 0, Plata: 0, Oro: 0 };
     allCustomers.forEach(c => { dist[c.nivel] = (dist[c.nivel] || 0) + 1; });
+    document.getElementById('kpiBronce').textContent = dist.Bronce;
+    document.getElementById('kpiPlata').textContent  = dist.Plata;
+    document.getElementById('kpiOro').textContent    = dist.Oro;
     renderDonut(dist);
+    toast(delta > 0 ? `+${delta} sello agregado ✓` : `Sellos actualizados ✓`, 'success', 2000);
   }
 
   function calcNivel(s) {
@@ -1247,10 +1401,12 @@
     document.getElementById('editSellos').value  = sellos;
     document.getElementById('editError').classList.remove('show');
     document.getElementById('editModal').classList.add('show');
+    lockScroll();
   }
 
   function closeModal() {
     document.getElementById('editModal').classList.remove('show');
+    unlockScroll();
   }
 
   // Close modal clicking outside
@@ -1305,10 +1461,14 @@
 
     closeModal();
     filterTable();
+    toast('Cliente actualizado ✓', 'success', 2000);
 
-    // Refresh donut
+    // Refresh donut + level KPIs
     const dist = { Bronce: 0, Plata: 0, Oro: 0 };
     allCustomers.forEach(c => { dist[c.nivel] = (dist[c.nivel] || 0) + 1; });
+    document.getElementById('kpiBronce').textContent = dist.Bronce;
+    document.getElementById('kpiPlata').textContent  = dist.Plata;
+    document.getElementById('kpiOro').textContent    = dist.Oro;
     renderDonut(dist);
   }
 
@@ -1321,12 +1481,20 @@
       .eq('token', token)
       .eq('business_id', CONFIG.BUSINESS_ID);
 
-    if (error) { alert('Error al eliminar: ' + error.message); return; }
+    if (error) { toast('Error al eliminar: ' + error.message, 'error'); return; }
     allCustomers = allCustomers.filter(c => c.token !== token);
     filterTable();
     document.getElementById('kpiClientes').textContent = allCustomers.length;
-    const conReward = allCustomers.filter(c => c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0).length;
+    const conReward = allCustomers.filter(c =>
+      Math.floor((c.sellos - (c.sellos_canjeados || 0)) / CONFIG.SELLOS_POR_REWARD) > 0
+    ).length;
     document.getElementById('kpiReward').textContent = conReward;
+    const distDel = { Bronce: 0, Plata: 0, Oro: 0 };
+    allCustomers.forEach(c => { distDel[c.nivel] = (distDel[c.nivel] || 0) + 1; });
+    document.getElementById('kpiBronce').textContent = distDel.Bronce;
+    document.getElementById('kpiPlata').textContent  = distDel.Plata;
+    document.getElementById('kpiOro').textContent    = distDel.Oro;
+    toast('Cliente eliminado', 'info', 2000);
   }
 
   // ─── Crear cliente ───────────────────────────────
@@ -1353,7 +1521,7 @@
     const { data, error } = await sb
       .from('customers')
       .insert({ nombre, telefono, email: email || null, sellos, nivel, business_id: CONFIG.BUSINESS_ID })
-      .select('token')
+      .select('id, token')
       .single();
 
     if (error) {
@@ -1363,9 +1531,20 @@
       return;
     }
 
+    // Si tiene sellos iniciales, registrar stamp_log
+    if (sellos > 0) {
+      await sb.from('stamp_logs').insert({
+        customer_id: data.id || null,
+        business_id: CONFIG.BUSINESS_ID,
+        sellos_delta: sellos,
+        origen: 'admin'
+      });
+    }
+
     const m = document.getElementById('addSuccess');
     m.textContent = '✓ Cliente creado exitosamente.';
     m.classList.add('show');
+    toast('Cliente creado ✓', 'success', 2000);
 
     const link = window.location.origin + '/tarjeta.html?token=' + data.token;
     newClientLink = link;
@@ -1384,7 +1563,7 @@
 
   function copyLink() {
     navigator.clipboard.writeText(newClientLink).then(() => {
-      alert('Link copiado al portapapeles.');
+      toast('Link copiado ✓', 'success', 2000);
     });
   }
 
@@ -1409,7 +1588,7 @@
 
   // ─── Exportar CSV ────────────────────────────────
   function exportarCSV() {
-    if (!allCustomers.length) { alert('No hay clientes para exportar.'); return; }
+    if (!allCustomers.length) { toast('No hay clientes para exportar.', 'error'); return; }
     const header = ['Nombre', 'Teléfono', 'Email', 'Nivel', 'Sellos', 'Fecha registro'];
     const rows = allCustomers.map(c => [
       `"${(c.nombre||'').replace(/"/g,'""')}"`,
@@ -1432,6 +1611,7 @@
   // ─── Historial de sellos ──────────────────────────
   function closeHistorial() {
     document.getElementById('historialModal').classList.remove('show');
+    unlockScroll();
   }
   document.getElementById('historialModal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('historialModal')) closeHistorial();
@@ -1441,6 +1621,7 @@
     document.getElementById('historialNombre').textContent = nombre;
     document.getElementById('historialList').innerHTML = '<div class="h-empty">⏳ Cargando...</div>';
     document.getElementById('historialModal').classList.add('show');
+    lockScroll();
 
     const { data, error } = await sb
       .from('stamp_logs')
@@ -1505,14 +1686,20 @@
       case 'bronce':     return allCustomers.filter(c => c.nivel === 'Bronce');
       case 'plata':      return allCustomers.filter(c => c.nivel === 'Plata');
       case 'oro':        return allCustomers.filter(c => c.nivel === 'Oro');
-      case 'falta1':     return allCustomers.filter(c => c.sellos % CONFIG.SELLOS_POR_REWARD === (CONFIG.SELLOS_POR_REWARD - 1));
-      case 'recompensa': return allCustomers.filter(c => c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0);
+      case 'falta1':     return allCustomers.filter(c => {
+        const sd = c.sellos - (c.sellos_canjeados || 0);
+        return sd > 0 && sd % CONFIG.SELLOS_POR_REWARD === (CONFIG.SELLOS_POR_REWARD - 1);
+      });
+      case 'recompensa': return allCustomers.filter(c =>
+        Math.floor((c.sellos - (c.sellos_canjeados || 0)) / CONFIG.SELLOS_POR_REWARD) > 0
+      );
       default:           return allCustomers;
     }
   }
 
   function buildWspMessage(template, c) {
-    const enCiclo   = c.sellos % CONFIG.SELLOS_POR_REWARD;
+    const sellosDisp = c.sellos - (c.sellos_canjeados || 0);
+    const enCiclo   = sellosDisp % CONFIG.SELLOS_POR_REWARD;
     const faltantes = enCiclo === 0 ? CONFIG.SELLOS_POR_REWARD : CONFIG.SELLOS_POR_REWARD - enCiclo;
     return template
       .replace(/{nombre}/g,    c.nombre.split(' ')[0])
@@ -1539,10 +1726,12 @@
       const wspUrl   = telefono
         ? `https://wa.me/${telefono}?text=${encodeURIComponent(msg)}`
         : '#';
-      const nivelIcon = c.nivel === 'Oro' ? '🥇' : c.nivel === 'Plata' ? '🥈' : '🥉';
-      const enCiclo   = c.sellos % CONFIG.SELLOS_POR_REWARD;
-      const subText   = c.nivel + ' · ' + c.sellos + ' sellos' +
-        (enCiclo > 0 ? ` · faltan ${CONFIG.SELLOS_POR_REWARD - enCiclo}` : ' · 🎁 recompensa lista');
+      const nivelIcon  = c.nivel === 'Oro' ? '🥇' : c.nivel === 'Plata' ? '🥈' : '🥉';
+      const sellosDisp = c.sellos - (c.sellos_canjeados || 0);
+      const premiosD   = Math.floor(sellosDisp / CONFIG.SELLOS_POR_REWARD);
+      const enCicloC   = sellosDisp % CONFIG.SELLOS_POR_REWARD;
+      const subText    = c.nivel + ' · ' + sellosDisp + ' disp.' +
+        (premiosD > 0 ? ` · 🎁 ${premiosD} premio${premiosD > 1 ? 's' : ''}` : ` · faltan ${CONFIG.SELLOS_POR_REWARD - enCicloC}`);
       return `
         <div class="campana-item">
           <div class="ci-avatar">${nivelIcon}</div>
@@ -1559,11 +1748,8 @@
   }
 
   // Re-renderizar lista si cambia la plantilla
-  document.addEventListener('DOMContentLoaded', () => {
-    const ta = document.getElementById('campanaTemplate');
-    if (ta) ta.addEventListener('input', () => {
-      if (campanaSegmentoActivo) renderCampanaList();
-    });
+  document.getElementById('campanaTemplate').addEventListener('input', () => {
+    if (campanaSegmentoActivo) renderCampanaList();
   });
 
   // ─── Tabs ────────────────────────────────────────
