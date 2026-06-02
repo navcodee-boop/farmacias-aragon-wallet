@@ -650,6 +650,26 @@
     document.getElementById('gatePanel').style.display = 'none';
     document.getElementById('mainPanel').style.display = 'block';
     document.getElementById('inputTelefono').focus();
+
+    // Si llega con ?token= en la URL, cargar cliente automáticamente
+    const urlToken = new URLSearchParams(window.location.search).get('token');
+    if (urlToken) buscarClientePorToken(urlToken);
+  }
+
+  async function buscarClientePorToken(token) {
+    try {
+      const { data, error } = await sb
+        .from('customers')
+        .select('*')
+        .eq('token', token)
+        .eq('business_id', CONFIG.BUSINESS_ID)
+        .eq('activo', true)
+        .maybeSingle();
+      if (!error && data) {
+        clienteActual = data;
+        mostrarCliente(data);
+      }
+    } catch(e) { console.error('buscarClientePorToken:', e); }
   }
 
   // Restaurar sesión si ya autenticó antes en esta pestaña
