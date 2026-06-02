@@ -631,7 +631,6 @@
     SUPABASE_URL:      'https://tsevjwdkvcqivektwyuo.supabase.co',
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzZXZqd2RrdmNxaXZla3R3eXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1OTQ2NTIsImV4cCI6MjA5NTE3MDY1Mn0.M2bGm_Kffpl5yC5h709WhT5LrA_Fg2A1AZ2gjeL2k6k',
     BUSINESS_ID:       'farmacia-001',
-    ADMIN_PASSWORD:    'admin123',
     SELLOS_POR_REWARD: 10,
     NOMBRE_NEGOCIO:    'Farmacias Aragón',
     EMOJI_SELLO:       '💊',
@@ -804,13 +803,28 @@
     pill.textContent = c.nivel;
     pill.className = 'nivel-pill nivel-' + c.nivel;
 
-    renderGrid(c.sellos);
+    // Calcular sellos disponibles (sin canjeados)
+    const sellosDisp  = c.sellos - (c.sellos_canjeados || 0);
+    const premiosDisp = Math.floor(sellosDisp / CONFIG.SELLOS_POR_REWARD);
+    const tieneReward = premiosDisp > 0;
 
-    const tieneReward = c.sellos > 0 && c.sellos % CONFIG.SELLOS_POR_REWARD === 0;
+    renderGrid(sellosDisp);
+
     const reward = document.getElementById('rewardBadge');
     reward.style.display = tieneReward ? 'block' : 'none';
+    if (tieneReward) {
+      reward.textContent = premiosDisp > 1
+        ? `🎁 ¡Tiene ${premiosDisp} premios disponibles para canjear!`
+        : '🎁 ¡Ya tiene un premio disponible!';
+    }
+
     const btnCanje = document.getElementById('btnCanjear');
     btnCanje.style.display = tieneReward ? 'block' : 'none';
+    if (tieneReward) {
+      btnCanje.textContent = premiosDisp > 1
+        ? `🎁 Canjear 1 premio (quedan ${premiosDisp - 1} más)`
+        : '🎁 Canjear premio';
+    }
 
     renderBenefitsPanel(c);
 
@@ -820,11 +834,13 @@
 
   // ── Panel de beneficios ───────────────────────────
   function renderBenefitsPanel(c) {
-    const panel   = document.getElementById('benefitsPanel');
-    const sellos  = c.sellos;
-    const nivel   = c.nivel;
-    const enCiclo = sellos % CONFIG.SELLOS_POR_REWARD;
-    const tieneReward = sellos > 0 && enCiclo === 0;
+    const panel       = document.getElementById('benefitsPanel');
+    const sellos      = c.sellos;
+    const nivel       = c.nivel;
+    const sellosDisp  = sellos - (c.sellos_canjeados || 0);
+    const premiosDisp = Math.floor(sellosDisp / CONFIG.SELLOS_POR_REWARD);
+    const enCiclo     = sellosDisp % CONFIG.SELLOS_POR_REWARD;
+    const tieneReward = premiosDisp > 0;
     const faltanReward = tieneReward ? 0 : CONFIG.SELLOS_POR_REWARD - enCiclo;
 
     let html = `<div class="benefits-panel-title">💡 Beneficios del cliente</div>`;
@@ -834,14 +850,14 @@
       html += `<div class="benefit-reward-alert">🎁 ¡Tiene recompensa para canjear hoy!</div>`;
     }
 
-    // Recompensa por sellos
+    // Premio por sellos
     const rewardLabel = tieneReward
-      ? '¡Recompensa lista!'
+      ? (premiosDisp > 1 ? `¡${premiosDisp} premios!` : '¡Premio listo!')
       : `Faltan ${faltanReward} sello${faltanReward !== 1 ? 's' : ''}`;
     const rewardStatusClass = tieneReward ? 'disponible' : 'pendiente';
     html += `<div class="benefit-row-checkin">
       <span class="b-icon">🎁</span>
-      <span class="b-label">Recompensa cada 10 sellos</span>
+      <span class="b-label">Premio cada 10 sellos</span>
       <span class="b-status ${rewardStatusClass}">${rewardLabel}</span>
     </div>`;
 
@@ -956,53 +972,50 @@
     resetPanel();
   }
 
-  // ── Canjear recompensa ────────────────────────────
+  // ── Canjear premio ────────────────────────────────
   async function canjearRecompensa() {
     if (!clienteActual) return;
-    if (!confirm(`¿Canjear recompensa de ${clienteActual.nombre.split(' ')[0]}? Se restarán ${CONFIG.SELLOS_POR_REWARD} sellos.`)) return;
 
     const btn = document.getElementById('btnCanjear');
+    // Anti-duplicado: deshabilitar inmediatamente
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Canjeando...';
 
-    const nuevosSellos = clienteActual.sellos - CONFIG.SELLOS_POR_REWARD;
-    const nuevoNivel   = calcNivel(nuevosSellos);
-
     try {
-      // Actualizar sellos
-      const { error: errUpdate } = await sb
-        .from('customers')
-        .update({ sellos: nuevosSellos, nivel: nuevoNivel })
-        .eq('token', clienteActual.token)
-        .eq('business_id', CONFIG.BUSINESS_ID);
-      if (errUpdate) throw errUpdate;
+      const { data, error } = await sb.rpc('canjear_premio', {
+        p_token:       clienteActual.token,
+        p_business_id: CONFIG.BUSINESS_ID,
+      });
 
-      // Registrar log de canje
-      const { error: errLog } = await sb
-        .from('stamp_logs')
-        .insert({
-          customer_id:  clienteActual.id,
-          business_id:  CONFIG.BUSINESS_ID,
-          sellos_delta: -CONFIG.SELLOS_POR_REWARD,
-          origen:       'canje',
-        });
-      if (errLog) console.warn('Log canje fallido:', errLog);
+      if (error) throw error;
+      const res = typeof data === 'string' ? JSON.parse(data) : data;
 
-      clienteActual.sellos = nuevosSellos;
-      clienteActual.nivel  = nuevoNivel;
+      if (!res.ok) {
+        alert(res.error === 'sin_premios'
+          ? 'El cliente no tiene premios disponibles.'
+          : 'Error: ' + res.error);
+        btn.disabled = false;
+        btn.innerHTML = '🎁 Canjear premio';
+        return;
+      }
 
-      // Overlay de éxito con mensaje de canje
-      document.getElementById('successTitle').textContent = '¡Recompensa canjeada! 🎁';
-      document.getElementById('successSub').textContent   =
-        clienteActual.nombre.split(' ')[0] + ' ahora tiene ' + nuevosSellos + ' sellos ' + CONFIG.EMOJI_SELLO;
-      document.getElementById('successNivel').textContent = '✓ Canje registrado correctamente';
+      // Actualizar estado local
+      clienteActual.sellos_canjeados = res.sellos_canjeados;
+
+      // Overlay de éxito
+      document.getElementById('successTitle').textContent = '¡Premio canjeado! 🎁';
+      document.getElementById('successSub').textContent =
+        clienteActual.nombre.split(' ')[0] + ' — ' + res.sellos_disponibles + ' sellos disponibles';
+      document.getElementById('successNivel').textContent = res.premios_disponibles > 0
+        ? `🎁 Aún tiene ${res.premios_disponibles} premio${res.premios_disponibles > 1 ? 's' : ''} por canjear`
+        : '✓ Premio registrado correctamente';
       document.getElementById('successOverlay').classList.add('show');
 
     } catch (err) {
       console.error(err);
       alert('Error al canjear. Intenta de nuevo.');
       btn.disabled = false;
-      btn.innerHTML = '🎁 Canjear recompensa (-10 sellos)';
+      btn.innerHTML = '🎁 Canjear premio';
     }
   }
 
@@ -1014,7 +1027,7 @@
     document.getElementById('btnAgregar').innerHTML = '➕ Agregar Sello ' + CONFIG.EMOJI_SELLO;
     document.getElementById('btnCanjear').style.display = 'none';
     document.getElementById('btnCanjear').disabled = false;
-    document.getElementById('btnCanjear').innerHTML = '🎁 Canjear recompensa (-10 sellos)';
+    document.getElementById('btnCanjear').innerHTML = '🎁 Canjear premio';
     document.getElementById('inputTelefono').focus();
   }
 
