@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     :root {
       --bg:         #060d12;
@@ -858,6 +859,19 @@
             </div>
           </div>
         </div>
+
+        <!-- QR de registro para el mostrador -->
+        <div class="chart-card" style="margin-top:16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <h3>📷 QR para nuevos clientes</h3>
+            <p style="font-size:13px;color:var(--text-sub);margin:8px 0 0;line-height:1.5;">Muestra este código en el mostrador para que los clientes se registren solos en el programa.</p>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;" id="regQrUrl"></div>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:12px;flex-shrink:0;align-self:center;">
+            <div id="adminRegQR"></div>
+          </div>
+        </div>
+
       </div>
 
       <!-- ── Clientes tab ── -->
@@ -1106,6 +1120,27 @@
       now.toLocaleDateString('es-CL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
     await Promise.all([loadCustomers(), loadStats()]);
+    generarQRRegistro();
+  }
+
+  // ─── QR de registro ──────────────────────────────
+  let qrRegistroGenerado = false;
+  function generarQRRegistro() {
+    if (qrRegistroGenerado) return;
+    const container = document.getElementById('adminRegQR');
+    if (!container) return;
+    const url = window.location.origin + '/registro.html';
+    new QRCode(container, {
+      text:         url,
+      width:        160,
+      height:       160,
+      colorDark:    '#000000',
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
+    });
+    const urlEl = document.getElementById('regQrUrl');
+    if (urlEl) urlEl.textContent = url;
+    qrRegistroGenerado = true;
   }
 
   // ─── Load customers ──────────────────────────────
@@ -1518,47 +1553,56 @@
 
     const nivel = calcNivel(sellos);
 
-    const { data, error } = await sb
-      .from('customers')
-      .insert({ nombre, telefono, email: email || null, sellos, nivel, business_id: CONFIG.BUSINESS_ID })
-      .select('id, token')
-      .single();
+    try {
+      const { data, error } = await sb
+        .from('customers')
+        .insert({ nombre, telefono, email: email || null, sellos, nivel, business_id: CONFIG.BUSINESS_ID })
+        .select('token')
+        .single();
 
-    if (error) {
-      const m = document.getElementById('addError');
-      m.textContent = 'Error: ' + (error.message || 'No se pudo crear el cliente');
+      if (error) throw new Error(error.message || 'Error al crear cliente');
+
+      // Si tiene sellos iniciales, registrar stamp_log (buscar id por token)
+      if (sellos > 0) {
+        const { data: cNew } = await sb
+          .from('customers').select('id').eq('token', data.token).single();
+        if (cNew?.id) {
+          await sb.from('stamp_logs').insert({
+            customer_id: cNew.id,
+            business_id: CONFIG.BUSINESS_ID,
+            sellos_delta: sellos,
+            origen: 'admin'
+          });
+        }
+      }
+
+      const m = document.getElementById('addSuccess');
+      m.textContent = '✓ Cliente creado exitosamente.';
       m.classList.add('show');
-      return;
+      toast('Cliente creado ✓', 'success', 2000);
+
+      const link = window.location.origin + '/tarjeta.html?token=' + data.token;
+      newClientLink = link;
+      document.getElementById('linkUrl').textContent = link;
+      document.getElementById('linkShare').style.display = 'block';
+
+      // Reset form
+      document.getElementById('newNombre').value   = '';
+      document.getElementById('newTelefono').value = '';
+      document.getElementById('newEmail').value    = '';
+      document.getElementById('newSellos').value   = '0';
+
+      await loadCustomers();
+
+    } catch (err) {
+      console.error('crearCliente error:', err);
+      const msg = err.message?.includes('Load failed') || err.message?.includes('fetch')
+        ? 'Sin conexión a la base de datos. Verifica tu internet y vuelve a intentarlo.'
+        : (err.message || 'No se pudo crear el cliente');
+      const m = document.getElementById('addError');
+      m.textContent = msg;
+      m.classList.add('show');
     }
-
-    // Si tiene sellos iniciales, registrar stamp_log
-    if (sellos > 0) {
-      await sb.from('stamp_logs').insert({
-        customer_id: data.id || null,
-        business_id: CONFIG.BUSINESS_ID,
-        sellos_delta: sellos,
-        origen: 'admin'
-      });
-    }
-
-    const m = document.getElementById('addSuccess');
-    m.textContent = '✓ Cliente creado exitosamente.';
-    m.classList.add('show');
-    toast('Cliente creado ✓', 'success', 2000);
-
-    const link = window.location.origin + '/tarjeta.html?token=' + data.token;
-    newClientLink = link;
-    document.getElementById('linkUrl').textContent = link;
-    document.getElementById('linkShare').style.display = 'block';
-
-    // Reset form
-    document.getElementById('newNombre').value   = '';
-    document.getElementById('newTelefono').value = '';
-    document.getElementById('newEmail').value    = '';
-    document.getElementById('newSellos').value   = '0';
-
-    // Reload
-    await loadCustomers();
   }
 
   function copyLink() {
