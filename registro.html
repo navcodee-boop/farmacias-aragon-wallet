@@ -386,7 +386,8 @@
 
     } catch (err) {
       console.error(err);
-      showError('Ocurrió un error. Por favor intenta de nuevo.');
+      const msg = err?.message || err?.toString() || 'Error desconocido';
+      showError('Error: ' + msg);
       btn.disabled = false;
       btn.innerHTML = 'Unirme al programa ' + CONFIG.EMOJI_MARCA;
     }
