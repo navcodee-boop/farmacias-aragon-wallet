@@ -513,6 +513,16 @@
       En tu navegador → compartir → "Agregar a pantalla de inicio" para acceso rápido
     </div>
 
+    <!-- Acceso rápido farmacéutico -->
+    <div style="text-align:center;margin-top:20px;padding-bottom:8px;">
+      <a id="farmLink" href="#"
+        style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-sub);text-decoration:none;background:var(--elevated);border:1px solid var(--border);border-radius:12px;padding:10px 18px;transition:all 0.15s;"
+        onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-sub)'">
+        ⚕️ Farmacéutico — Registrar visita
+      </a>
+    </div>
+
   </div><!-- /mainContent -->
 </div>
 
@@ -670,6 +680,14 @@
 
     // Generar QR automáticamente
     generateClientQR();
+
+    // Link rápido para el farmacéutico
+    const farmLink = document.getElementById('farmLink');
+    if (farmLink) {
+      const params = new URLSearchParams(window.location.search);
+      const tok = params.get('token');
+      if (tok) farmLink.href = '/checkin.html?token=' + tok;
+    }
   }
 
   function renderStampGrid(sellos) {
