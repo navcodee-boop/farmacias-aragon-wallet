@@ -22,6 +22,15 @@ CREATE INDEX IF NOT EXISTS idx_customers_business_id ON customers(business_id);
 CREATE INDEX IF NOT EXISTS idx_customers_token        ON customers(token);
 CREATE INDEX IF NOT EXISTS idx_customers_telefono     ON customers(telefono);
 
+-- Evita registros duplicados del mismo cliente (mismo teléfono) dentro de un mismo negocio.
+-- Antes de aplicar, verifica que no existan duplicados:
+--   SELECT business_id, telefono, COUNT(*) FROM customers
+--   WHERE telefono IS NOT NULL
+--   GROUP BY business_id, telefono HAVING COUNT(*) > 1;
+-- Si aparecen filas, fusiona/elimina los duplicados manualmente desde el panel admin antes de continuar.
+ALTER TABLE customers
+  ADD CONSTRAINT customers_business_telefono_unique UNIQUE (business_id, telefono);
+
 
 -- ─── 2. TABLA STAMP_LOGS ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS stamp_logs (
