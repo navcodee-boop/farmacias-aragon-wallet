@@ -652,18 +652,14 @@
   const ROLE_KEY    = 'aragon_checkin_role';
   let rolActual     = null; // 'admin' | 'farmaceutico'
 
-  // Aplica las restricciones de la interfaz según el rol que inició sesión.
-  // El perfil de farmacéutico solo puede sumar sellos al escanear/buscar al
-  // cliente: no debe ver ni usar el botón de canjear recompensas.
+  // Aplica los ajustes visuales según el rol que inició sesión.
+  // El perfil de farmacéutico tiene las mismas funciones que el admin dentro
+  // del check-in (sumar sellos y canjear recompensas); la única diferencia es
+  // que su contraseña no le da acceso al panel de administración.
   function aplicarPermisosRol() {
     const esFarmaceutico = rolActual === 'farmaceutico';
     const badge = document.getElementById('roleBadge');
     if (badge) badge.style.display = esFarmaceutico ? 'inline-block' : 'none';
-
-    const btnCanje = document.getElementById('btnCanjear');
-    if (btnCanje) btnCanje.dataset.rolBloqueado = esFarmaceutico ? '1' : '0';
-    // Si ya hay un cliente cargado, refrescar la vista para ocultar/mostrar el botón
-    if (clienteActual) mostrarCliente(clienteActual);
   }
 
   function abrirPanel() {
@@ -898,20 +894,11 @@
     }
 
     const btnCanje = document.getElementById('btnCanjear');
-    // El perfil de farmacéutico no puede canjear recompensas, solo sumar sellos
-    const puedeCanjear = rolActual !== 'farmaceutico';
-    btnCanje.style.display = (tieneReward && puedeCanjear) ? 'block' : 'none';
-    if (tieneReward && puedeCanjear) {
+    btnCanje.style.display = tieneReward ? 'block' : 'none';
+    if (tieneReward) {
       btnCanje.textContent = premiosDisp > 1
         ? `🎁 Canjear 1 premio (quedan ${premiosDisp - 1} más)`
         : '🎁 Canjear premio';
-    }
-    // Si tiene recompensa pero su rol no permite canjear, igual mostramos el aviso
-    // informativo (rewardBadge) para que avise a un administrador.
-    if (tieneReward && !puedeCanjear) {
-      reward.textContent = premiosDisp > 1
-        ? `🎁 Tiene ${premiosDisp} premios disponibles — un administrador puede canjearlos`
-        : '🎁 Tiene un premio disponible — un administrador puede canjearlo';
     }
 
     renderBenefitsPanel(c);
@@ -1063,11 +1050,6 @@
   // ── Canjear premio ────────────────────────────────
   async function canjearRecompensa() {
     if (!clienteActual) return;
-    // Bloqueo defensivo: el perfil de farmacéutico no puede canjear recompensas
-    if (rolActual === 'farmaceutico') {
-      alert('Tu perfil de farmacéutico no tiene permiso para canjear recompensas. Pide a un administrador que lo haga.');
-      return;
-    }
 
     const btn = document.getElementById('btnCanjear');
     // Anti-duplicado: deshabilitar inmediatamente
