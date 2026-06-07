@@ -535,6 +535,7 @@
     <h1 id="tituloNegocio">Farmacia — Check-in</h1>
     <p>Panel del farmacéutico</p>
   </div>
+  <span id="roleBadge" style="display:none;margin-left:auto;font-size:11px;font-weight:700;letter-spacing:1px;color:#00C4A7;background:rgba(0,196,167,.12);border:1px solid rgba(0,196,167,.35);border-radius:999px;padding:5px 12px;">FARMACÉUTICO</span>
 </div>
 
 <div class="wrapper">
@@ -543,7 +544,7 @@
   <div id="gatePanel">
     <div class="gate-icon">🔒</div>
     <h2>Acceso restringido</h2>
-    <p>Ingresa la contraseña para acceder al panel de check-in</p>
+    <p>Ingresa tu contraseña de acceso (administrador o farmacéutico)</p>
     <input type="password" id="inputPass" placeholder="Contraseña" />
     <button class="btn-primary" onclick="checkPass()">Ingresar</button>
     <div class="msg error" id="msgGate"></div>
@@ -632,6 +633,7 @@
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzZXZqd2RrdmNxaXZla3R3eXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1OTQ2NTIsImV4cCI6MjA5NTE3MDY1Mn0.M2bGm_Kffpl5yC5h709WhT5LrA_Fg2A1AZ2gjeL2k6k',
     BUSINESS_ID:       'farmacia-001',
     ADMIN_PASSWORD:    'admin123',
+    STAFF_PASSWORD:    'Arag@n2001',
     SELLOS_POR_REWARD: 10,
     NOMBRE_NEGOCIO:    'Farmacias Aragón',
     EMOJI_SELLO:       '💊',
@@ -647,11 +649,29 @@
 
   // ── Auth + sesión persistente ─────────────────────
   const SESSION_KEY = 'aragon_checkin_auth';
+  const ROLE_KEY    = 'aragon_checkin_role';
+  let rolActual     = null; // 'admin' | 'farmaceutico'
+
+  // Aplica las restricciones de la interfaz según el rol que inició sesión.
+  // El perfil de farmacéutico solo puede sumar sellos al escanear/buscar al
+  // cliente: no debe ver ni usar el botón de canjear recompensas.
+  function aplicarPermisosRol() {
+    const esFarmaceutico = rolActual === 'farmaceutico';
+    const badge = document.getElementById('roleBadge');
+    if (badge) badge.style.display = esFarmaceutico ? 'inline-block' : 'none';
+
+    const btnCanje = document.getElementById('btnCanjear');
+    if (btnCanje) btnCanje.dataset.rolBloqueado = esFarmaceutico ? '1' : '0';
+    // Si ya hay un cliente cargado, refrescar la vista para ocultar/mostrar el botón
+    if (clienteActual) mostrarCliente(clienteActual);
+  }
 
   function abrirPanel() {
     document.getElementById('gatePanel').style.display = 'none';
     document.getElementById('mainPanel').style.display = 'block';
     document.getElementById('inputTelefono').focus();
+
+    aplicarPermisosRol();
 
     // Si llega con ?token= en la URL, cargar cliente automáticamente
     const urlToken = new URLSearchParams(window.location.search).get('token');
@@ -677,13 +697,21 @@
 
   // Restaurar sesión si ya autenticó antes en esta pestaña
   if (sessionStorage.getItem(SESSION_KEY) === 'ok') {
+    rolActual = sessionStorage.getItem(ROLE_KEY) || 'admin';
     abrirPanel();
   }
 
   function checkPass() {
     const val = document.getElementById('inputPass').value;
     if (val === CONFIG.ADMIN_PASSWORD) {
+      rolActual = 'admin';
       sessionStorage.setItem(SESSION_KEY, 'ok');
+      sessionStorage.setItem(ROLE_KEY, rolActual);
+      abrirPanel();
+    } else if (val === CONFIG.STAFF_PASSWORD) {
+      rolActual = 'farmaceutico';
+      sessionStorage.setItem(SESSION_KEY, 'ok');
+      sessionStorage.setItem(ROLE_KEY, rolActual);
       abrirPanel();
     } else {
       const m = document.getElementById('msgGate');
@@ -870,11 +898,20 @@
     }
 
     const btnCanje = document.getElementById('btnCanjear');
-    btnCanje.style.display = tieneReward ? 'block' : 'none';
-    if (tieneReward) {
+    // El perfil de farmacéutico no puede canjear recompensas, solo sumar sellos
+    const puedeCanjear = rolActual !== 'farmaceutico';
+    btnCanje.style.display = (tieneReward && puedeCanjear) ? 'block' : 'none';
+    if (tieneReward && puedeCanjear) {
       btnCanje.textContent = premiosDisp > 1
         ? `🎁 Canjear 1 premio (quedan ${premiosDisp - 1} más)`
         : '🎁 Canjear premio';
+    }
+    // Si tiene recompensa pero su rol no permite canjear, igual mostramos el aviso
+    // informativo (rewardBadge) para que avise a un administrador.
+    if (tieneReward && !puedeCanjear) {
+      reward.textContent = premiosDisp > 1
+        ? `🎁 Tiene ${premiosDisp} premios disponibles — un administrador puede canjearlos`
+        : '🎁 Tiene un premio disponible — un administrador puede canjearlo';
     }
 
     renderBenefitsPanel(c);
@@ -1026,6 +1063,11 @@
   // ── Canjear premio ────────────────────────────────
   async function canjearRecompensa() {
     if (!clienteActual) return;
+    // Bloqueo defensivo: el perfil de farmacéutico no puede canjear recompensas
+    if (rolActual === 'farmaceutico') {
+      alert('Tu perfil de farmacéutico no tiene permiso para canjear recompensas. Pide a un administrador que lo haga.');
+      return;
+    }
 
     const btn = document.getElementById('btnCanjear');
     // Anti-duplicado: deshabilitar inmediatamente
