@@ -42,20 +42,53 @@
     }
     .wrapper { width: 100%; max-width: 420px; }
 
-    /* Header */
-    .app-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 22px 0 18px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 28px;
+    /* Header — marca + estado en vivo */
+    .top {
+      text-align: center;
+      padding: 28px 0 20px;
       width: 100%;
       max-width: 420px;
     }
-    .app-header .logo { font-size: 24px; }
-    .app-header .biz-name { font-size: 16px; font-weight: 700; }
-    .app-header .biz-sub { font-size: 12px; color: var(--text-sub); }
+    .brand-icon { font-size: 30px; margin-bottom: 6px; }
+    .brand-name { font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; }
+    .live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 6px;
+    }
+    .live .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(0,196,167,0.5); }
+      70%  { box-shadow: 0 0 0 8px rgba(0,196,167,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,196,167,0); }
+    }
+    .btn-refresh {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-sub);
+      font-size: 15px;
+      width: 30px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+    .btn-refresh:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-refresh:active { opacity: 0.7; }
 
     /* Loading / error states */
     #loadingState, #errorState {
@@ -77,58 +110,43 @@
     /* Main content */
     #mainContent { display: none; }
 
-    /* Hero card */
-    .hero-card {
-      border-radius: 24px;
-      padding: 28px 24px;
-      margin-bottom: 16px;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
+    /* Card base */
+    .card {
       background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 24px;
-      z-index: 0;
-    }
-    .hero-card > * { position: relative; z-index: 1; }
-
-    .nivel-badge {
-      display: inline-block;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 5px 14px;
-      border-radius: 99px;
+      padding: 26px 22px;
       margin-bottom: 16px;
-      letter-spacing: 0.5px;
     }
-    .nivel-Bronce { background: linear-gradient(135deg, var(--bronce-from), var(--bronce-to)); color: #fff; }
-    .nivel-Plata  { background: linear-gradient(135deg, var(--plata-from),  var(--plata-to));  color: #fff; }
-    .nivel-Oro    { background: linear-gradient(135deg, var(--oro-from),    var(--oro-to));    color: #fff; }
 
+    /* Fila superior: nombre + medalla de nivel */
+    .row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 22px;
+    }
     .client-name-big {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 4px;
+      letter-spacing: -0.4px;
     }
-    .member-since {
-      font-size: 13px;
-      color: var(--text-sub);
-      margin-bottom: 24px;
+    .status-sub { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+    .medal { text-align: center; }
+    .medal-icon { font-size: 22px; line-height: 1; }
+    .medal-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      margin-top: 2px;
     }
+    .medal-Bronce .medal-label { color: var(--bronce-to); }
+    .medal-Plata  .medal-label { color: var(--plata-to); }
+    .medal-Oro    .medal-label { color: var(--oro-to); }
 
     /* Sellos big number */
-    .sellos-block {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
     .sellos-big {
-      font-size: 64px;
+      font-size: 58px;
       font-weight: 800;
       line-height: 1;
       color: var(--accent);
@@ -138,209 +156,107 @@
       from { transform: scale(0.5); opacity: 0; }
       to   { transform: scale(1);   opacity: 1; }
     }
-    .sellos-unit { font-size: 16px; color: var(--text-sub); font-weight: 500; }
+    .sellos-unit { font-size: 15px; color: var(--text-sub); font-weight: 500; margin-left: 6px; }
 
-    /* Progress to reward */
-    .progress-section { margin-bottom: 8px; }
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-sub);
-      margin-bottom: 8px;
-    }
-    .progress-bar-bg {
-      height: 6px;
-      background: var(--elevated);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), #00e5c9);
-      border-radius: 99px;
-      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Reward ready */
-    .reward-ready {
-      background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1));
-      border: 1px solid rgba(245,158,11,0.4);
-      border-radius: 14px;
-      padding: 14px 18px;
-      font-size: 15px;
-      font-weight: 700;
-      color: #FCD34D;
-      text-align: center;
-      margin-bottom: 16px;
-      display: none;
-    }
-
-    /* Stamps grid section */
-    .section-label {
-      font-size: 13px;
-      font-weight: 600;
+    .sub-label {
+      font-size: 11px;
+      letter-spacing: 1.5px;
       color: var(--text-sub);
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin: 24px 0 12px;
+      margin: 20px 0 12px;
     }
 
-    .stamps-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-    .stamp-row {
+    /* Progreso — fila única numerada (estilo referencia) */
+    .progress-row {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
-      gap: 5px;
+      gap: 6px;
+      margin-bottom: 18px;
     }
-    .stamp-slot {
+    .slot {
       aspect-ratio: 1;
-      border-radius: 8px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      transition: transform 0.2s;
-    }
-    .stamp-slot.filled {
-      background: var(--accent-dim);
-      border: 1px solid rgba(0,196,167,0.3);
-      animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .stamp-slot.empty {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
       background: var(--elevated);
       border: 1px solid var(--border);
+      transition: transform 0.2s;
+    }
+    .slot.filled {
+      background: linear-gradient(135deg, rgba(0,196,167,0.35), rgba(0,196,167,0.12));
+      border: 1px solid rgba(0,196,167,0.5);
+      color: #fff;
+      box-shadow: 0 0 14px rgba(0,196,167,0.35);
+      animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     @keyframes pop {
       0%   { transform: scale(0); }
       100% { transform: scale(1); }
     }
-    .row-label {
-      font-size: 11px;
-      color: var(--muted);
-      text-align: right;
-      margin-top: -6px;
-      margin-bottom: 2px;
-    }
-    .row-complete {
-      background: var(--accent-dim);
-      border: 1px solid rgba(0,196,167,0.2);
-      border-radius: 10px;
-      padding: 3px 6px;
-      font-size: 11px;
-      color: var(--accent);
-      font-weight: 600;
-    }
 
-    /* Benefits */
-    .benefits-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .benefits-card h3 {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 14px;
-    }
-    .benefit-row {
+    /* Próximo premio — tarjeta compacta */
+    .next-card {
       display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .benefit-row:last-child { border-bottom: none; }
-    .benefit-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
-    .benefit-text { font-size: 14px; font-weight: 500; }
-    .benefit-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
-
-    /* Levels display */
-    .levels-card {
-      background: var(--card);
+      align-items: center;
+      gap: 14px;
+      background: var(--elevated);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 24px;
+      border-radius: 16px;
+      padding: 16px 18px;
     }
-    .levels-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
-    .level-row {
+    .next-card.ready {
+      background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1));
+      border: 1px solid rgba(245,158,11,0.4);
+    }
+    .next-icon { font-size: 26px; flex-shrink: 0; }
+    .next-title { font-size: 14px; font-weight: 700; }
+    .next-card.ready .next-title { color: #FCD34D; }
+    .next-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+    /* Resumen de siguiente nivel / beneficio actual */
+    .perk-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
     }
-    .level-row:last-child { border-bottom: none; }
-    .level-pill-sm {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 99px;
-      flex-shrink: 0;
-      min-width: 54px;
-      text-align: center;
-    }
-    .level-info { flex: 1; }
-    .level-name { font-size: 14px; font-weight: 600; }
-    .level-req  { font-size: 12px; color: var(--text-sub); }
-    .level-benefit { font-size: 12px; color: var(--accent); font-weight: 500; }
-    .level-current-tag {
-      font-size: 11px;
-      color: var(--accent);
-      font-weight: 700;
-      padding: 2px 8px;
-      background: var(--accent-dim);
-      border-radius: 99px;
-    }
+    .perk-icon { font-size: 18px; flex-shrink: 0; }
+    .perk-text { font-size: 12.5px; color: var(--text-sub); line-height: 1.5; }
+    .perk-text b { color: var(--text); font-weight: 600; }
 
-    /* QR del cliente — siempre visible */
-    .qr-section {
-      background: var(--card);
-      border: 1px solid rgba(0,196,167,0.25);
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 16px;
+    /* QR del cliente */
+    .qr-card {
       text-align: center;
     }
-    .qr-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-    .qr-section p { font-size: 12px; color: var(--text-sub); margin-bottom: 16px; }
-    .qr-box-client {
+    .qr-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .qr-box {
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 16px;
       display: inline-block;
       margin-bottom: 8px;
-      box-shadow: 0 0 0 4px rgba(0,196,167,0.1);
     }
-
-    /* Refresh button */
-    .btn-refresh {
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+    .qr-hint {
+      font-size: 12.5px;
       color: var(--text-sub);
-      font-size: 16px;
-      width: 34px;
-      height: 34px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      margin-left: auto;
-      transition: border-color 0.15s, color 0.15s;
-      -webkit-tap-highlight-color: transparent;
+      margin-top: 12px;
+      line-height: 1.5;
     }
-    .btn-refresh:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-refresh:active { opacity: 0.7; }
+    .since { font-size: 12px; color: var(--muted); margin-top: 16px; }
 
-    /* Share button */
+    /* Compartir */
     .btn-share {
       width: 100%;
       display: flex;
@@ -352,26 +268,71 @@
       border-radius: 14px;
       color: var(--text);
       font-family: 'Inter', sans-serif;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
-      padding: 15px;
+      padding: 14px;
       cursor: pointer;
-      margin-bottom: 12px;
+      margin-top: 16px;
       transition: background 0.15s, border-color 0.15s;
       -webkit-tap-highlight-color: transparent;
       text-decoration: none;
     }
     .btn-share:hover { background: var(--accent-dim); border-color: rgba(0,196,167,0.3); }
     .btn-share:active { opacity: 0.8; }
-
     .share-msg {
       text-align: center;
       font-size: 12px;
       color: var(--success);
-      margin-bottom: 12px;
+      margin-top: 10px;
       display: none;
     }
     .share-msg.show { display: block; }
+
+    /* Guardar en pantalla de inicio */
+    .save-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .save-os { margin-bottom: 16px; }
+    .save-os:last-child { margin-bottom: 0; }
+    .save-os-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .save-steps {
+      font-size: 12.5px;
+      color: var(--text-sub);
+      line-height: 1.7;
+      padding-left: 18px;
+    }
+    .save-steps b { color: var(--text); font-weight: 600; }
+
+    /* Acceso farmacéutico */
+    .farm-link-wrap { text-align: center; margin-top: 4px; }
+    .farm-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-decoration: none;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 18px;
+      transition: all 0.15s;
+    }
+    .farm-link:hover { border-color: var(--accent); color: var(--accent); }
 
     /* Realtime — notificación de sello nuevo */
     .stamp-toast {
@@ -400,31 +361,19 @@
       30%  { transform: scale(1.08); }
       100% { transform: scale(1); }
     }
-
-    /* Footer */
-    .footer-hint {
-      background: var(--elevated);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      text-align: center;
-      font-size: 13px;
-      color: var(--text-sub);
-    }
-    .footer-hint strong { color: var(--text); display: block; margin-bottom: 4px; }
   </style>
 </head>
 <body>
 <div class="stamp-toast" id="stampToast"></div>
 
-<!-- App header -->
-<div class="app-header">
-  <div class="logo">⚕️</div>
-  <div>
-    <div class="biz-name" id="bizName">Farmacia Wallet</div>
-    <div class="biz-sub">Programa de fidelización</div>
+<!-- Header -->
+<div class="top">
+  <div class="brand-icon">⚕️</div>
+  <div class="brand-name" id="bizName">Farmacia Wallet</div>
+  <div class="live">
+    <span class="dot"></span> en vivo
+    <button class="btn-refresh" onclick="location.reload()" title="Actualizar tarjeta">↻</button>
   </div>
-  <button class="btn-refresh" onclick="location.reload()" title="Actualizar tarjeta">↻</button>
 </div>
 
 <div class="wrapper">
@@ -450,104 +399,83 @@
   <!-- Main content -->
   <div id="mainContent">
 
-    <!-- Hero card -->
-    <div class="hero-card">
-      <span class="nivel-badge" id="nivelBadge">Bronce</span>
-      <div class="client-name-big" id="clientName">—</div>
-      <div class="member-since" id="memberSince">Miembro del programa</div>
-
-      <div class="sellos-block">
-        <div class="sellos-big" id="sellosNum">0</div>
-        <div class="sellos-unit">sellos 💊</div>
+    <!-- Card principal -->
+    <div class="card">
+      <div class="row-top">
+        <div>
+          <div class="client-name-big" id="clientName">—</div>
+          <div class="status-sub">Miembro activo</div>
+        </div>
+        <div class="medal" id="medalBlock">
+          <div class="medal-icon" id="medalIcon">🥉</div>
+          <div class="medal-label" id="medalLabel">BRONCE</div>
+        </div>
       </div>
 
-      <div class="progress-section">
-        <div class="progress-label">
-          <span id="progressLabel">Progreso a próxima recompensa</span>
-          <span id="progressCount">0/10</span>
+      <div>
+        <span class="sellos-big" id="sellosNum">0</span><span class="sellos-unit">sellos 💊</span>
+      </div>
+      <div class="sub-label" id="progressSubLabel">Progreso — premio cada 10 sellos</div>
+
+      <div class="progress-row" id="progressRow"></div>
+
+      <div class="next-card" id="nextCard">
+        <div class="next-icon" id="nextIcon">🎁</div>
+        <div>
+          <div class="next-title" id="nextTitle">Próximo premio disponible</div>
+          <div class="next-sub" id="nextSub">Faltan 3 sellos · 0 premios canjeados</div>
         </div>
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
-        </div>
+      </div>
+
+      <div class="perk-row" id="perkRow" style="display:none;">
+        <div class="perk-icon" id="perkIcon">🥈</div>
+        <div class="perk-text" id="perkText"></div>
       </div>
     </div>
 
-    <!-- QR siempre visible -->
-    <div class="qr-section" id="qrSection">
-      <h3>📷 Tu QR de fidelización</h3>
-      <p>Muéstrale al farmacéutico para acumular sellos</p>
-      <div class="qr-box-client">
+    <!-- QR -->
+    <div class="card qr-card" id="qrSection">
+      <div class="qr-label">Tu código personal</div>
+      <div class="qr-box">
         <div id="clientQRCode"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);">Tu código personal de cliente</div>
+      <div class="qr-hint">Muéstralo en caja al pedir tu producto<br>para que acumule tu sello</div>
+      <div class="since" id="memberSince">Miembro desde —</div>
+
+      <button class="btn-share" onclick="compartirTarjeta()">
+        📤 Compartir mi tarjeta
+      </button>
+      <div class="share-msg" id="shareMsg">✓ Link copiado al portapapeles</div>
     </div>
 
-    <!-- Reward ready -->
-    <div class="reward-ready" id="rewardReady">
-      🎁 ¡Tienes una recompensa disponible! Muéstrale esto al farmacéutico
-    </div>
+    <!-- Guardar en pantalla de inicio -->
+    <div class="card">
+      <div class="save-title">📲 Guarda tu tarjeta en la pantalla de inicio</div>
 
-    <!-- Stamp grid -->
-    <div class="section-label">Mis sellos</div>
-    <div class="stamps-container" id="stampsContainer"></div>
-
-    <!-- Benefits -->
-    <div class="section-label">Mis beneficios</div>
-    <div class="benefits-card" id="benefitsCard">
-      <!-- Populated by JS -->
-    </div>
-
-    <!-- Levels -->
-    <div class="section-label">Niveles del programa</div>
-    <div class="levels-card">
-      <h3>Escala de beneficios</h3>
-      <div class="level-row">
-        <span class="level-pill-sm nivel-Bronce">Bronce</span>
-        <div class="level-info">
-          <div class="level-name">Nivel Bronce</div>
-          <div class="level-req">0 – 29 sellos</div>
-          <div class="level-benefit">Recompensa cada 10 sellos</div>
-        </div>
-        <span class="level-current-tag" id="currentBronce" style="display:none;">✓ Actual</span>
+      <div class="save-os">
+        <div class="save-os-name">🍎 iPhone / iPad (Safari)</div>
+        <ol class="save-steps">
+          <li>Abre esta página en <b>Safari</b></li>
+          <li>Toca el ícono de <b>Compartir</b> (cuadrado con flecha hacia arriba)</li>
+          <li>Selecciona <b>"Agregar a pantalla de inicio"</b></li>
+          <li>Confirma tocando <b>"Agregar"</b></li>
+        </ol>
       </div>
-      <div class="level-row">
-        <span class="level-pill-sm nivel-Plata">Plata</span>
-        <div class="level-info">
-          <div class="level-name">Nivel Plata</div>
-          <div class="level-req">30 – 79 sellos</div>
-          <div class="level-benefit">+5% descuento adicional</div>
-        </div>
-        <span class="level-current-tag" id="currentPlata" style="display:none;">✓ Actual</span>
-      </div>
-      <div class="level-row">
-        <span class="level-pill-sm nivel-Oro">Oro</span>
-        <div class="level-info">
-          <div class="level-name">Nivel Oro</div>
-          <div class="level-req">80+ sellos</div>
-          <div class="level-benefit">+10% descuento adicional</div>
-        </div>
-        <span class="level-current-tag" id="currentOro" style="display:none;">✓ Actual</span>
-      </div>
-    </div>
 
-    <!-- Share button -->
-    <button class="btn-share" onclick="compartirTarjeta()">
-      📤 Compartir mi tarjeta
-    </button>
-    <div class="share-msg" id="shareMsg">✓ Link copiado al portapapeles</div>
-
-    <!-- Footer hint -->
-    <div class="footer-hint">
-      <strong>📱 Guarda esta página en tu pantalla de inicio</strong>
-      En tu navegador → compartir → "Agregar a pantalla de inicio" para acceso rápido
+      <div class="save-os">
+        <div class="save-os-name">🤖 Android (Chrome)</div>
+        <ol class="save-steps">
+          <li>Abre esta página en <b>Chrome</b></li>
+          <li>Toca el menú <b>⋮</b> (esquina superior derecha)</li>
+          <li>Selecciona <b>"Agregar a pantalla de inicio"</b> o <b>"Instalar app"</b></li>
+          <li>Confirma tocando <b>"Agregar" / "Instalar"</b></li>
+        </ol>
+      </div>
     </div>
 
     <!-- Acceso rápido farmacéutico -->
-    <div style="text-align:center;margin-top:20px;padding-bottom:8px;">
-      <a id="farmLink" href="#"
-        style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-sub);text-decoration:none;background:var(--elevated);border:1px solid var(--border);border-radius:12px;padding:10px 18px;transition:all 0.15s;"
-        onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-        onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-sub)'">
+    <div class="farm-link-wrap">
+      <a id="farmLink" href="#" class="farm-link">
         ⚕️ Farmacéutico — Registrar visita
       </a>
     </div>
@@ -571,6 +499,12 @@
   document.title = CONFIG.NOMBRE_NEGOCIO + ' — Mi Tarjeta';
 
   const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+  const NIVELES = {
+    Bronce: { icon: '🥉', from: 0,  to: 29,  next: 'Plata', nextIcon: '🥈', nextAt: 30, nextBenefit: '5% de descuento adicional' },
+    Plata:  { icon: '🥈', from: 30, to: 79,  next: 'Oro',   nextIcon: '🥇', nextAt: 80, nextBenefit: '10% de descuento adicional' },
+    Oro:    { icon: '🥇', from: 80, to: null, next: null,   nextIcon: null, nextAt: null, nextBenefit: null },
+  };
 
   function calcNivel(s) {
     if (s >= 80) return 'Oro';
@@ -715,47 +649,57 @@
     const sellosDisp  = sellos - canjeados;
     const premiosDisp = Math.floor(sellosDisp / CONFIG.SELLOS_POR_REWARD);
     const enCiclo     = sellosDisp % CONFIG.SELLOS_POR_REWARD;
-    const progPct     = (enCiclo / CONFIG.SELLOS_POR_REWARD) * 100;
     const faltanParaReward = CONFIG.SELLOS_POR_REWARD - enCiclo;
 
-    // Header
-    document.getElementById('clientName').textContent   = c.nombre;
-    document.getElementById('memberSince').textContent  = 'Miembro desde ' + formatDate(c.created_at);
-    document.getElementById('sellosNum').textContent    = sellos;
+    // Header / nombre / sellos
+    document.getElementById('clientName').textContent  = c.nombre;
+    document.getElementById('memberSince').textContent = 'Miembro desde ' + formatDate(c.created_at);
+    document.getElementById('sellosNum').textContent   = sellos;
 
-    // Nivel badge
-    const badge = document.getElementById('nivelBadge');
-    badge.textContent = nivel + ' ' + (nivel === 'Oro' ? '🥇' : nivel === 'Plata' ? '🥈' : '🥉');
-    badge.className = 'nivel-badge nivel-' + nivel;
+    // Medalla de nivel
+    const info = NIVELES[nivel];
+    const medalBlock = document.getElementById('medalBlock');
+    medalBlock.className = 'medal medal-' + nivel;
+    document.getElementById('medalIcon').textContent  = info.icon;
+    document.getElementById('medalLabel').textContent = nivel.toUpperCase();
 
-    // Progress — basado en sellos disponibles (sin canjeados)
+    // Fila de progreso (1–10), basada en sellos disponibles dentro del ciclo actual
+    renderProgressRow(premiosDisp > 0 ? CONFIG.SELLOS_POR_REWARD : enCiclo);
+
+    // Tarjeta de "próximo premio"
+    const nextCard  = document.getElementById('nextCard');
+    const nextIcon  = document.getElementById('nextIcon');
+    const nextTitle = document.getElementById('nextTitle');
+    const nextSub   = document.getElementById('nextSub');
     if (premiosDisp > 0) {
-      document.getElementById('progressLabel').textContent = premiosDisp > 1 ? `¡Tienes ${premiosDisp} premios disponibles!` : '¡Premio disponible!';
-      document.getElementById('progressCount').textContent = CONFIG.SELLOS_POR_REWARD + '/' + CONFIG.SELLOS_POR_REWARD;
-      document.getElementById('progressFill').style.width = '100%';
-      const rewardEl = document.getElementById('rewardReady');
-      rewardEl.textContent = premiosDisp > 1
-        ? `🎉 ¡Tienes ${premiosDisp} premios disponibles! Muéstrale esto al farmacéutico`
-        : '🎉 ¡Tienes un premio disponible! Muéstrale esto al farmacéutico';
-      rewardEl.style.display = 'block';
+      nextCard.classList.add('ready');
+      nextIcon.textContent = '🎉';
+      nextTitle.textContent = premiosDisp > 1
+        ? `¡Tienes ${premiosDisp} premios disponibles!`
+        : '¡Tienes un premio disponible!';
+      nextSub.textContent = 'Muéstrale esto al farmacéutico · ' + canjeados + (canjeados === 1 ? ' premio canjeado' : ' premios canjeados');
     } else {
-      document.getElementById('progressLabel').textContent = 'Faltan ' + faltanParaReward + ' para premio';
-      document.getElementById('progressCount').textContent = enCiclo + '/' + CONFIG.SELLOS_POR_REWARD;
-      setTimeout(() => {
-        document.getElementById('progressFill').style.width = progPct + '%';
-      }, 200);
+      nextCard.classList.remove('ready');
+      nextIcon.textContent = '🎁';
+      nextTitle.textContent = 'Próximo premio gratis';
+      nextSub.textContent = 'Faltan ' + faltanParaReward + (faltanParaReward === 1 ? ' sello' : ' sellos')
+        + ' · ' + canjeados + (canjeados === 1 ? ' premio canjeado' : ' premios canjeados');
     }
 
-    // Nivel actual indicators
-    document.getElementById('currentBronce').style.display = nivel === 'Bronce' ? 'inline-block' : 'none';
-    document.getElementById('currentPlata').style.display  = nivel === 'Plata'  ? 'inline-block' : 'none';
-    document.getElementById('currentOro').style.display    = nivel === 'Oro'    ? 'inline-block' : 'none';
-
-    // Stamp grid — mostrar sellos disponibles (sin canjeados)
-    renderStampGrid(sellosDisp);
-
-    // Benefits
-    renderBenefits(nivel, sellos);
+    // Resumen del siguiente nivel (o mensaje de nivel máximo)
+    const perkRow  = document.getElementById('perkRow');
+    const perkIcon = document.getElementById('perkIcon');
+    const perkText = document.getElementById('perkText');
+    if (info.next) {
+      const faltanNivel = info.nextAt - sellos;
+      perkRow.style.display = 'flex';
+      perkIcon.textContent = info.nextIcon;
+      perkText.innerHTML = `A <b>${faltanNivel} ${faltanNivel === 1 ? 'sello' : 'sellos'}</b> de Nivel ${info.next} — desbloquea ${info.nextBenefit}`;
+    } else {
+      perkRow.style.display = 'flex';
+      perkIcon.textContent = '👑';
+      perkText.innerHTML = '<b>¡Eres cliente Oro!</b> Tienes el máximo de beneficios. Gracias por tu lealtad.';
+    }
 
     // Generar QR automáticamente
     generateClientQR();
@@ -769,99 +713,18 @@
     }
   }
 
-  function renderStampGrid(sellos) {
-    const container = document.getElementById('stampsContainer');
-    container.innerHTML = '';
-
-    const grupos = Math.max(1, Math.ceil(sellos / CONFIG.SELLOS_POR_REWARD) + 1);
-    for (let g = 0; g < Math.min(grupos, 5); g++) {
-      const rowDiv = document.createElement('div');
-
-      // Row header
-      const header = document.createElement('div');
-      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;';
-      const rowLabel = document.createElement('span');
-      rowLabel.style.cssText = 'font-size:11px;color:var(--muted);font-weight:500;';
-      rowLabel.textContent = 'Tarjeta ' + (g + 1);
-      header.appendChild(rowLabel);
-
-      const inicio = g * CONFIG.SELLOS_POR_REWARD;
-      const sellosEnFila = Math.min(sellos - inicio, CONFIG.SELLOS_POR_REWARD);
-      if (sellosEnFila >= CONFIG.SELLOS_POR_REWARD) {
-        const completedTag = document.createElement('span');
-        completedTag.className = 'row-complete';
-        completedTag.textContent = '✓ Completa';
-        header.appendChild(completedTag);
-      }
-      rowDiv.appendChild(header);
-
-      // Grid row
-      const grid = document.createElement('div');
-      grid.className = 'stamp-row';
-      for (let i = 0; i < CONFIG.SELLOS_POR_REWARD; i++) {
-        const slot = document.createElement('div');
-        const globalIdx = g * CONFIG.SELLOS_POR_REWARD + i;
-        slot.className = 'stamp-slot ' + (globalIdx < sellos ? 'filled' : 'empty');
-        slot.textContent = globalIdx < sellos ? CONFIG.EMOJI_SELLO : '';
-        if (globalIdx < sellos) {
-          slot.style.animationDelay = (i * 0.03) + 's';
-        }
-        grid.appendChild(slot);
-      }
-      rowDiv.appendChild(grid);
-      container.appendChild(rowDiv);
+  // ── Fila única de progreso 1–10 ──────────────────────
+  function renderProgressRow(filled) {
+    const row = document.getElementById('progressRow');
+    row.innerHTML = '';
+    for (let i = 1; i <= CONFIG.SELLOS_POR_REWARD; i++) {
+      const slot = document.createElement('div');
+      const isFilled = i <= filled;
+      slot.className = 'slot' + (isFilled ? ' filled' : '');
+      slot.textContent = isFilled ? CONFIG.EMOJI_SELLO : String(i);
+      if (isFilled) slot.style.animationDelay = ((i - 1) * 0.04) + 's';
+      row.appendChild(slot);
     }
-  }
-
-  function renderBenefits(nivel, sellos) {
-    const card = document.getElementById('benefitsCard');
-    const benefits = [
-      { icon: '💊', text: 'Sello por cada compra', desc: 'Acumula en cada visita a la farmacia' },
-      { icon: '🎁', text: 'Recompensa cada 10 sellos', desc: 'Descuentos y productos exclusivos para miembros' },
-    ];
-
-    if (nivel === 'Plata' || nivel === 'Oro') {
-      benefits.push({
-        icon: '🏷️',
-        text: nivel === 'Oro' ? '10% descuento adicional' : '5% descuento adicional',
-        desc: 'Por ser cliente ' + nivel + ' — se aplica al momento de la compra'
-      });
-    }
-
-    if (nivel === 'Bronce') {
-      const faltanPlata = 30 - sellos;
-      benefits.push({
-        icon: '🥈',
-        text: 'Próximo nivel: Plata',
-        desc: `Faltan ${faltanPlata} sellos para desbloquear 5% de descuento adicional`
-      });
-    } else if (nivel === 'Plata') {
-      const faltanOro = 80 - sellos;
-      benefits.push({
-        icon: '🥇',
-        text: 'Próximo nivel: Oro',
-        desc: `Faltan ${faltanOro} sellos para desbloquear 10% de descuento adicional`
-      });
-    } else {
-      benefits.push({
-        icon: '👑',
-        text: '¡Eres cliente Oro!',
-        desc: 'Tienes el máximo de beneficios. ¡Gracias por tu lealtad!'
-      });
-    }
-
-    card.innerHTML = '<h3>Tus beneficios actuales</h3>';
-    benefits.forEach(b => {
-      const row = document.createElement('div');
-      row.className = 'benefit-row';
-      row.innerHTML = `
-        <span class="benefit-icon">${b.icon}</span>
-        <div>
-          <div class="benefit-text">${b.text}</div>
-          <div class="benefit-desc">${b.desc}</div>
-        </div>`;
-      card.appendChild(row);
-    });
   }
 
   // ── QR del cliente — siempre visible ────────────────
