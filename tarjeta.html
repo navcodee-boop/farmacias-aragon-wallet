@@ -373,6 +373,34 @@
     }
     .share-msg.show { display: block; }
 
+    /* Realtime — notificación de sello nuevo */
+    .stamp-toast {
+      position: fixed;
+      top: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #060d12;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 14px 22px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,196,167,0.35);
+      z-index: 999;
+      transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      white-space: nowrap;
+      max-width: 90vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stamp-toast.show { top: 18px; }
+    .pulse-update { animation: pulseUpdate 0.6s ease; }
+    @keyframes pulseUpdate {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
     /* Footer */
     .footer-hint {
       background: var(--elevated);
@@ -387,6 +415,7 @@
   </style>
 </head>
 <body>
+<div class="stamp-toast" id="stampToast"></div>
 
 <!-- App header -->
 <div class="app-header">
@@ -591,6 +620,10 @@
     }
   }
 
+  let currentToken = null;
+  let lastSellos = null;
+  let realtimeChannel = null;
+
   async function loadCard() {
     const params = new URLSearchParams(window.location.search);
     const token  = params.get('token');
@@ -613,12 +646,58 @@
 
       if (error || !data) { showError(); return; }
 
+      currentToken = token;
+      lastSellos = data.sellos;
       renderCard(data);
+      subscribeRealtime(token);
 
     } catch (err) {
       console.error(err);
       showError();
     }
+  }
+
+  // ── Realtime — refresco automático al recibir nuevos sellos ──
+  function subscribeRealtime(token) {
+    if (!token || realtimeChannel) return;
+    try {
+      realtimeChannel = sb
+        .channel('tarjeta-' + token)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'customers',
+          filter: 'token=eq.' + token,
+        }, (payload) => {
+          const nuevo = payload.new;
+          if (!nuevo) return;
+          const huboNuevoSello = (lastSellos !== null) && (nuevo.sellos > lastSellos);
+          lastSellos = nuevo.sellos;
+          renderCard(nuevo);
+          if (huboNuevoSello) {
+            showStampToast('💊 ¡Nuevo sello agregado! Ya tienes ' + nuevo.sellos);
+            const big = document.getElementById('sellosNum');
+            if (big) {
+              big.classList.remove('pulse-update');
+              void big.offsetWidth; // reiniciar animación
+              big.classList.add('pulse-update');
+            }
+            if (navigator.vibrate) navigator.vibrate(40);
+          }
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('No se pudo suscribir a Realtime:', e);
+    }
+  }
+
+  function showStampToast(msg) {
+    const toast = document.getElementById('stampToast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showStampToast._t);
+    showStampToast._t = setTimeout(() => toast.classList.remove('show'), 3200);
   }
 
   function showError() {
