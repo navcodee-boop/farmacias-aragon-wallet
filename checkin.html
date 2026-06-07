@@ -643,6 +643,7 @@
 
   const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
   let clienteActual = null;
+  let checkinRealtimeChannel = null;
 
   // ── Auth + sesión persistente ─────────────────────
   const SESSION_KEY = 'aragon_checkin_auth';
@@ -669,6 +670,7 @@
       if (!error && data) {
         clienteActual = data;
         mostrarCliente(data);
+        subscribeCheckinRealtime(data.token);
       }
     } catch(e) { console.error('buscarClientePorToken:', e); }
   }
@@ -805,6 +807,7 @@
 
       clienteActual = data;
       mostrarCliente(data);
+      subscribeCheckinRealtime(data.token);
 
     } catch (err) {
       console.error(err);
@@ -812,6 +815,33 @@
     } finally {
       btn.disabled = false;
       btn.textContent = 'Buscar';
+    }
+  }
+
+  // ── Realtime — mantener el panel del farmacéutico sincronizado ──
+  function subscribeCheckinRealtime(token) {
+    if (!token) return;
+    if (checkinRealtimeChannel) {
+      try { sb.removeChannel(checkinRealtimeChannel); } catch (e) {}
+      checkinRealtimeChannel = null;
+    }
+    try {
+      checkinRealtimeChannel = sb
+        .channel('checkin-' + token)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'customers',
+          filter: 'token=eq.' + token,
+        }, (payload) => {
+          const nuevo = payload.new;
+          if (!nuevo || !clienteActual || nuevo.token !== clienteActual.token) return;
+          clienteActual = nuevo;
+          mostrarCliente(nuevo);
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('No se pudo suscribir a Realtime (checkin):', e);
     }
   }
 
