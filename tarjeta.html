@@ -8,7 +8,9 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#060d12" />
   <title>Mi Tarjeta — Farmacia Wallet</title>
+  <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -298,6 +300,79 @@
       border-radius: 99px;
     }
 
+    /* QR del cliente — siempre visible */
+    .qr-section {
+      background: var(--card);
+      border: 1px solid rgba(0,196,167,0.25);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .qr-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .qr-section p { font-size: 12px; color: var(--text-sub); margin-bottom: 16px; }
+    .qr-box-client {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px;
+      display: inline-block;
+      margin-bottom: 8px;
+      box-shadow: 0 0 0 4px rgba(0,196,167,0.1);
+    }
+
+    /* Refresh button */
+    .btn-refresh {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-sub);
+      font-size: 16px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-left: auto;
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-refresh:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-refresh:active { opacity: 0.7; }
+
+    /* Share button */
+    .btn-share {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 15px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: background 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      text-decoration: none;
+    }
+    .btn-share:hover { background: var(--accent-dim); border-color: rgba(0,196,167,0.3); }
+    .btn-share:active { opacity: 0.8; }
+
+    .share-msg {
+      text-align: center;
+      font-size: 12px;
+      color: var(--success);
+      margin-bottom: 12px;
+      display: none;
+    }
+    .share-msg.show { display: block; }
+
     /* Footer */
     .footer-hint {
       background: var(--elevated);
@@ -320,6 +395,7 @@
     <div class="biz-name" id="bizName">Farmacia Wallet</div>
     <div class="biz-sub">Programa de fidelización</div>
   </div>
+  <button class="btn-refresh" onclick="location.reload()" title="Actualizar tarjeta">↻</button>
 </div>
 
 <div class="wrapper">
@@ -365,6 +441,16 @@
           <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
         </div>
       </div>
+    </div>
+
+    <!-- QR siempre visible -->
+    <div class="qr-section" id="qrSection">
+      <h3>📷 Tu QR de fidelización</h3>
+      <p>Muéstrale al farmacéutico para acumular sellos</p>
+      <div class="qr-box-client">
+        <div id="clientQRCode"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">Tu código personal de cliente</div>
     </div>
 
     <!-- Reward ready -->
@@ -415,10 +501,26 @@
       </div>
     </div>
 
+    <!-- Share button -->
+    <button class="btn-share" onclick="compartirTarjeta()">
+      📤 Compartir mi tarjeta
+    </button>
+    <div class="share-msg" id="shareMsg">✓ Link copiado al portapapeles</div>
+
     <!-- Footer hint -->
     <div class="footer-hint">
       <strong>📱 Guarda esta página en tu pantalla de inicio</strong>
       En tu navegador → compartir → "Agregar a pantalla de inicio" para acceso rápido
+    </div>
+
+    <!-- Acceso rápido farmacéutico -->
+    <div style="text-align:center;margin-top:20px;padding-bottom:8px;">
+      <a id="farmLink" href="#"
+        style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-sub);text-decoration:none;background:var(--elevated);border:1px solid var(--border);border-radius:12px;padding:10px 18px;transition:all 0.15s;"
+        onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-sub)'">
+        ⚕️ Farmacéutico — Registrar visita
+      </a>
     </div>
 
   </div><!-- /mainContent -->
@@ -430,7 +532,6 @@
     SUPABASE_URL:      'https://tsevjwdkvcqivektwyuo.supabase.co',
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzZXZqd2RrdmNxaXZla3R3eXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1OTQ2NTIsImV4cCI6MjA5NTE3MDY1Mn0.M2bGm_Kffpl5yC5h709WhT5LrA_Fg2A1AZ2gjeL2k6k',
     BUSINESS_ID:       'farmacia-001',
-    ADMIN_PASSWORD:    'admin123',
     SELLOS_POR_REWARD: 10,
     NOMBRE_NEGOCIO:    'Farmacias Aragón',
     EMOJI_SELLO:       '💊',
@@ -454,6 +555,42 @@
     return d.toLocaleDateString('es-CL', { year: 'numeric', month: 'long' });
   }
 
+  // ── Manifest dinámico para PWA ───────────────────────
+  function injectDynamicManifest(token) {
+    try {
+      const manifest = {
+        name: CONFIG.NOMBRE_NEGOCIO + ' Wallet',
+        short_name: 'Mi Tarjeta',
+        description: 'Mi tarjeta de fidelización — ' + CONFIG.NOMBRE_NEGOCIO,
+        start_url: '/tarjeta.html?token=' + token,
+        display: 'standalone',
+        background_color: '#060d12',
+        theme_color: '#00C4A7',
+        orientation: 'portrait',
+        icons: [
+          {
+            src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%230d1a22'/><text y='130' x='96' text-anchor='middle' font-size='110'>⚕️</text></svg>",
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          },
+          {
+            src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%230d1a22'/><text y='360' x='256' text-anchor='middle' font-size='300'>⚕️</text></svg>",
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.querySelector('link[rel="manifest"]');
+      if (link) link.href = blobUrl;
+    } catch (e) {
+      console.warn('No se pudo inyectar manifest dinámico:', e);
+    }
+  }
+
   async function loadCard() {
     const params = new URLSearchParams(window.location.search);
     const token  = params.get('token');
@@ -463,10 +600,13 @@
       return;
     }
 
+    // Inyectar manifest dinámico para que "Agregar a pantalla de inicio" abra esta tarjeta
+    injectDynamicManifest(token);
+
     try {
       const { data, error } = await sb
         .from('customers')
-        .select('nombre, sellos, nivel, telefono, created_at')
+        .select('nombre, sellos, sellos_canjeados, nivel, telefono, created_at')
         .eq('token', token)
         .eq('business_id', CONFIG.BUSINESS_ID)
         .single();
@@ -490,13 +630,14 @@
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display  = 'block';
 
-    const nivel   = calcNivel(c.sellos);
-    const sellos  = c.sellos;
-    const enCiclo = sellos % CONFIG.SELLOS_POR_REWARD;
-    const progPct = (enCiclo / CONFIG.SELLOS_POR_REWARD) * 100;
-    const faltanParaReward = enCiclo === 0 && sellos > 0
-      ? 0
-      : CONFIG.SELLOS_POR_REWARD - enCiclo;
+    const nivel       = calcNivel(c.sellos);
+    const sellos      = c.sellos;
+    const canjeados   = c.sellos_canjeados || 0;
+    const sellosDisp  = sellos - canjeados;
+    const premiosDisp = Math.floor(sellosDisp / CONFIG.SELLOS_POR_REWARD);
+    const enCiclo     = sellosDisp % CONFIG.SELLOS_POR_REWARD;
+    const progPct     = (enCiclo / CONFIG.SELLOS_POR_REWARD) * 100;
+    const faltanParaReward = CONFIG.SELLOS_POR_REWARD - enCiclo;
 
     // Header
     document.getElementById('clientName').textContent   = c.nombre;
@@ -508,15 +649,18 @@
     badge.textContent = nivel + ' ' + (nivel === 'Oro' ? '🥇' : nivel === 'Plata' ? '🥈' : '🥉');
     badge.className = 'nivel-badge nivel-' + nivel;
 
-    // Progress
-    const rewardListo = (sellos > 0 && sellos % CONFIG.SELLOS_POR_REWARD === 0);
-    if (rewardListo) {
-      document.getElementById('progressLabel').textContent = '¡Recompensa disponible!';
+    // Progress — basado en sellos disponibles (sin canjeados)
+    if (premiosDisp > 0) {
+      document.getElementById('progressLabel').textContent = premiosDisp > 1 ? `¡Tienes ${premiosDisp} premios disponibles!` : '¡Premio disponible!';
       document.getElementById('progressCount').textContent = CONFIG.SELLOS_POR_REWARD + '/' + CONFIG.SELLOS_POR_REWARD;
       document.getElementById('progressFill').style.width = '100%';
-      document.getElementById('rewardReady').style.display = 'block';
+      const rewardEl = document.getElementById('rewardReady');
+      rewardEl.textContent = premiosDisp > 1
+        ? `🎉 ¡Tienes ${premiosDisp} premios disponibles! Muéstrale esto al farmacéutico`
+        : '🎉 ¡Tienes un premio disponible! Muéstrale esto al farmacéutico';
+      rewardEl.style.display = 'block';
     } else {
-      document.getElementById('progressLabel').textContent = 'Faltan ' + faltanParaReward + ' para recompensa';
+      document.getElementById('progressLabel').textContent = 'Faltan ' + faltanParaReward + ' para premio';
       document.getElementById('progressCount').textContent = enCiclo + '/' + CONFIG.SELLOS_POR_REWARD;
       setTimeout(() => {
         document.getElementById('progressFill').style.width = progPct + '%';
@@ -528,11 +672,22 @@
     document.getElementById('currentPlata').style.display  = nivel === 'Plata'  ? 'inline-block' : 'none';
     document.getElementById('currentOro').style.display    = nivel === 'Oro'    ? 'inline-block' : 'none';
 
-    // Stamp grid — agrupar por 10
-    renderStampGrid(sellos);
+    // Stamp grid — mostrar sellos disponibles (sin canjeados)
+    renderStampGrid(sellosDisp);
 
     // Benefits
     renderBenefits(nivel, sellos);
+
+    // Generar QR automáticamente
+    generateClientQR();
+
+    // Link rápido para el farmacéutico
+    const farmLink = document.getElementById('farmLink');
+    if (farmLink) {
+      const params = new URLSearchParams(window.location.search);
+      const tok = params.get('token');
+      if (tok) farmLink.href = '/checkin.html?token=' + tok;
+    }
   }
 
   function renderStampGrid(sellos) {
@@ -628,6 +783,48 @@
         </div>`;
       card.appendChild(row);
     });
+  }
+
+  // ── QR del cliente — siempre visible ────────────────
+  let qrGenerado = false;
+  function generateClientQR() {
+    if (qrGenerado) return;
+    const container = document.getElementById('clientQRCode');
+    if (!container) return;
+    new QRCode(container, {
+      text:         window.location.href,
+      width:        200,
+      height:       200,
+      colorDark:    '#000000',
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
+    });
+    qrGenerado = true;
+  }
+
+  // ── Compartir tarjeta ─────────────────────────────
+  async function compartirTarjeta() {
+    const url   = window.location.href;
+    const title = CONFIG.NOMBRE_NEGOCIO + ' — Mi tarjeta de fidelización';
+    const text  = '¡Mira mi tarjeta de puntos en ' + CONFIG.NOMBRE_NEGOCIO + '! 💊';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+      } catch (e) {
+        // Usuario canceló el share — no hacer nada
+      }
+    } else {
+      // Fallback: copiar al portapapeles
+      try {
+        await navigator.clipboard.writeText(url);
+        const msg = document.getElementById('shareMsg');
+        msg.classList.add('show');
+        setTimeout(() => msg.classList.remove('show'), 3000);
+      } catch (e) {
+        prompt('Copia este link:', url);
+      }
+    }
   }
 
   loadCard();
